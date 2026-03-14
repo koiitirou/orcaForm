@@ -235,67 +235,6 @@
   }
 
   /**
-   * デバッグパネルを表示
-   */
-  function showDebugPanel(data) {
-    // 既存パネルを削除
-    var old = document.getElementById('orca-debug-panel');
-    if (old) old.remove();
-
-    var panel = document.createElement('div');
-    panel.id = 'orca-debug-panel';
-    panel.style.cssText = 'position:fixed;bottom:10px;right:10px;width:700px;max-height:80vh;' +
-      'background:#1e1e2e;color:#cdd6f4;border:1px solid #585b70;border-radius:8px;' +
-      'font-family:monospace;font-size:12px;z-index:99999;box-shadow:0 4px 20px rgba(0,0,0,0.5);' +
-      'display:flex;flex-direction:column;overflow:hidden;';
-
-    // ヘッダー
-    var statusIcon = data.success ? '✅' : '❌';
-    var statusText = data.success ? '送信成功' : '送信失敗';
-    var injectText = data.injected ? ' | 820注入済' : '';
-    var header = '<div style="padding:8px 12px;background:#313244;display:flex;justify-content:space-between;align-items:center;">' +
-      '<span style="font-weight:bold;">' + statusIcon + ' ORCA Proxy ' + statusText + injectText +
-      ' (status=' + data.status_code + ')</span>' +
-      '<button id="orca-debug-close" style="background:none;border:none;color:#f38ba8;cursor:pointer;font-size:16px;">✕</button></div>';
-
-    // タブ
-    var tabs = '<div style="display:flex;border-bottom:1px solid #585b70;">' +
-      '<button class="orca-dbg-tab" data-tab="sent" style="flex:1;padding:6px;background:#45475a;color:#cdd6f4;border:none;cursor:pointer;border-bottom:2px solid #89b4fa;">送信XML</button>' +
-      '<button class="orca-dbg-tab" data-tab="resp" style="flex:1;padding:6px;background:#313244;color:#a6adc8;border:none;cursor:pointer;">ORCAレスポンス</button></div>';
-
-    // コンテンツ
-    var sentXml = (data.debug_sent_xml || '(デバッグモードOFFのため非表示)').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    var respXml = (data.debug_orca_response || data.body || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-    var content = '<div style="overflow:auto;flex:1;max-height:60vh;">' +
-      '<pre id="orca-dbg-sent" style="margin:0;padding:10px;white-space:pre-wrap;word-break:break-all;">' + sentXml + '</pre>' +
-      '<pre id="orca-dbg-resp" style="margin:0;padding:10px;white-space:pre-wrap;word-break:break-all;display:none;">' + respXml + '</pre></div>';
-
-    panel.innerHTML = header + tabs + content;
-    document.body.appendChild(panel);
-
-    // 閉じるボタン
-    document.getElementById('orca-debug-close').addEventListener('click', function () {
-      panel.remove();
-    });
-
-    // タブ切り替え
-    var tabBtns = panel.querySelectorAll('.orca-dbg-tab');
-    tabBtns.forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var target = btn.getAttribute('data-tab');
-        document.getElementById('orca-dbg-sent').style.display = target === 'sent' ? 'block' : 'none';
-        document.getElementById('orca-dbg-resp').style.display = target === 'resp' ? 'block' : 'none';
-        tabBtns.forEach(function (b) {
-          b.style.background = b === btn ? '#45475a' : '#313244';
-          b.style.color = b === btn ? '#cdd6f4' : '#a6adc8';
-          b.style.borderBottom = b === btn ? '2px solid #89b4fa' : 'none';
-        });
-      });
-    });
-  }
-
-  /**
    * ORCA APIプロキシにXMLを送信（820コード注入付き）
    */
   function sendToProxy(xmlStr) {
@@ -308,8 +247,7 @@
       body: JSON.stringify({
         xml: xmlStr,
         class_type: '01',
-        inject_820: true,
-        debug: true
+        inject_820: true
       })
     })
     .then(function (res) { return res.json(); })
@@ -320,15 +258,18 @@
         console.error('[ORCA Helper] ❌ プロキシ送信失敗 (status=' + data.status_code + ')');
       }
 
-      // デバッグモードONの場合、ページ内パネルに表示
-      if (isDebug) {
-        showDebugPanel(data);
+      // デバッグパネル表示（xmlStrはクライアント側で直接渡す）
+      if (isDebug && window.__orcaDebugPanel) {
+        window.__orcaDebugPanel({ sentXml: xmlStr, serverData: data });
       }
     })
     .catch(function (err) {
       console.error('[ORCA Helper] ❌ プロキシ接続エラー:', err.message);
-      if (isDebug) {
-        showDebugPanel({ success: false, status_code: null, body: err.message, injected: false });
+      if (isDebug && window.__orcaDebugPanel) {
+        window.__orcaDebugPanel({
+          sentXml: xmlStr,
+          serverData: { success: false, status_code: null, body: err.message, injected: false }
+        });
       }
     });
   }

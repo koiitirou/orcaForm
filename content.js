@@ -15,7 +15,8 @@
     sidebarOpen: 'sidebarOpen',
     savedStartDate: 'savedStartDate',
     savedEndDate: 'savedEndDate',
-    injectCode: 'injectCodeEnabled'
+    injectCode: 'injectCodeEnabled',
+    debugMode: 'debugModeEnabled'
   };
 
   var SIDEBAR_WIDTH = 280;
@@ -163,6 +164,19 @@
       '        </div>',
       '        <label class="toggle-switch">',
       '          <input type="checkbox" id="orca-toggle-injectCode">',
+      '          <span class="toggle-slider"></span>',
+      '        </label>',
+      '      </div>',
+      '    </div>',
+      '',
+      '    <div class="setting-card" id="card-debugMode">',
+      '      <div class="setting-row">',
+      '        <div>',
+      '          <div class="setting-label">デバッグモード</div>',
+      '          <div class="setting-desc">送信XMLとORCA応答をConsoleに表示</div>',
+      '        </div>',
+      '        <label class="toggle-switch">',
+      '          <input type="checkbox" id="orca-toggle-debugMode">',
       '          <span class="toggle-slider"></span>',
       '        </label>',
       '      </div>',
@@ -325,7 +339,8 @@
       { id: 'orca-toggle-autoDate', key: STORAGE_KEYS.autoDate, card: 'card-autoDate' },
       { id: 'orca-toggle-statusBlank', key: STORAGE_KEYS.statusBlank, card: 'card-statusBlank' },
       { id: 'orca-toggle-autoSearch', key: STORAGE_KEYS.autoSearch, card: 'card-autoSearch' },
-      { id: 'orca-toggle-injectCode', key: STORAGE_KEYS.injectCode, card: 'card-injectCode' }
+      { id: 'orca-toggle-injectCode', key: STORAGE_KEYS.injectCode, card: 'card-injectCode' },
+      { id: 'orca-toggle-debugMode', key: STORAGE_KEYS.debugMode, card: 'card-debugMode' }
     ];
 
     toggles.forEach(function (t) {
@@ -347,6 +362,11 @@
             detail: { enabled: el.checked }
           }));
         }
+
+        // デバッグモードトグルの場合、page_script.jsに通知
+        if (t.id === 'orca-toggle-debugMode') {
+          document.documentElement.setAttribute('data-orca-debug', el.checked ? 'true' : 'false');
+        }
       });
     });
   }
@@ -358,12 +378,13 @@
     chrome.storage.local.get(
       [STORAGE_KEYS.autoDate, STORAGE_KEYS.statusBlank, STORAGE_KEYS.autoSearch,
        STORAGE_KEYS.sidebarOpen, STORAGE_KEYS.savedStartDate, STORAGE_KEYS.savedEndDate,
-       STORAGE_KEYS.injectCode],
+       STORAGE_KEYS.injectCode, STORAGE_KEYS.debugMode],
       function (result) {
         var autoDate = result[STORAGE_KEYS.autoDate] || false;
         var statusBlank = result[STORAGE_KEYS.statusBlank] || false;
         var autoSearch = result[STORAGE_KEYS.autoSearch] || false;
         var injectCode = result[STORAGE_KEYS.injectCode] || false;
+        var debugMode = result[STORAGE_KEYS.debugMode] || false;
         var sidebarOpenState = result[STORAGE_KEYS.sidebarOpen] || false;
         var savedStart = result[STORAGE_KEYS.savedStartDate] || getFirstDayOfMonthStr();
         var savedEnd = result[STORAGE_KEYS.savedEndDate] || getTodayStr();
@@ -382,11 +403,15 @@
         document.getElementById('orca-toggle-statusBlank').checked = statusBlank;
         document.getElementById('orca-toggle-autoSearch').checked = autoSearch;
         document.getElementById('orca-toggle-injectCode').checked = injectCode;
+        document.getElementById('orca-toggle-debugMode').checked = debugMode;
 
         updateCardStyle('card-autoDate', autoDate);
         updateCardStyle('card-statusBlank', statusBlank);
         updateCardStyle('card-autoSearch', autoSearch);
         updateCardStyle('card-injectCode', injectCode);
+        updateCardStyle('card-debugMode', debugMode);
+        document.documentElement.setAttribute('data-orca-inject', injectCode ? 'true' : 'false');
+        document.documentElement.setAttribute('data-orca-debug', debugMode ? 'true' : 'false');
         updateDateSectionVisibility(autoDate);
 
         // page_script.js に適用を指示（保存された日付を使用）

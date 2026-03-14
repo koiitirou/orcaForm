@@ -1,27 +1,36 @@
 {
   "manifest_version": 3,
   "name": "ORCA Order Convert Helper",
-  "version": "1.0.0",
-  "description": "WebORCAオーダー変換ページの期間指定を自動設定する拡張機能",
-  "permissions": ["storage", "activeTab"],
+  "version": "2.1.0",
+  "description": "WebORCAオーダー変換ページの期間指定・ステータス・検索を自動設定する拡張機能",
+  "permissions": ["storage"],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
   "action": {
-    "default_popup": "popup.html",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
     }
   },
-  "icons": {
-    "16": "icons/icon16.png",
-    "48": "icons/icon48.png",
-    "128": "icons/icon128.png"
+  "background": {
+    "service_worker": "background.js"
   },
   "content_scripts": [
     {
-      "matches": ["*://*/orderconvert/*"],
+      "matches": ["http://172.28.22.148/orderconvert/*"],
       "js": ["content.js"],
+      "css": ["sidebar.css"],
       "run_at": "document_idle"
+    },
+    {
+      "matches": ["http://172.28.22.148/orderconvert/*"],
+      "js": ["page_script.js"],
+      "run_at": "document_idle",
+      "world": "MAIN"
     }
   ]
 }

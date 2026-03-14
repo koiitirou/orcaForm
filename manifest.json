@@ -4,6 +4,7 @@
   "version": "2.1.0",
   "description": "WebORCAオーダー変換ページの期間指定・ステータス・検索を自動設定する拡張機能",
   "permissions": ["storage"],
+  "host_permissions": ["http://localhost:5100/*"],
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",

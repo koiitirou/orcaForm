@@ -142,6 +142,75 @@
     });
   }
 
+  /**
+   * ORCAボタンブロックを一括送信の下に追加
+   */
+  function injectOrcaButtons(vm) {
+    var allSubmitBtn = document.getElementById('allSubmit');
+    if (!allSubmitBtn || document.getElementById('orca-btn-block')) return;
+
+    // 患者ID取得ヘルパー
+    function getPatientId(padded) {
+      var ptid = '';
+      if (typeof vm.ptid === 'function') ptid = vm.ptid();
+      if (!ptid) { alert('患者IDが取得できません'); return null; }
+      if (padded) {
+        // 10桁ゼロパディング（K03, K04 等で必要）
+        var id = String(ptid).replace(/^0+/, '');
+        return id.padStart(10, '0');
+      }
+      // 通常（K02, K10 等 - 元のロジック）
+      return String(Number(ptid));
+    }
+
+    // WebORCA URL構築ヘルパー
+    function buildOrcaUrl(screen, padded) {
+      var patientId = getPatientId(padded);
+      if (!patientId) return null;
+
+      if (typeof vm.IsCloudFlg === 'function' && vm.IsCloudFlg()) {
+        return 'https://weborca.cloud.orcamo.jp/client.html?user=secom&pass=secom&screen=' + screen + '&ptnum=' + patientId;
+      } else if (typeof vm.is_weborca === 'function' && vm.is_weborca()) {
+        var link = '';
+        if (typeof vm.serverLink === 'function') link += vm.serverLink();
+        if (typeof vm.orcaPort === 'function') link += ':' + vm.orcaPort();
+        return 'http://' + link + '/client.html?user=secom&pass=secom&screen=' + screen + '&ptnum=' + patientId;
+      }
+      alert('WebORCA環境が設定されていません');
+      return null;
+    }
+
+    // ボタン定義（padded: trueのものは10桁ゼロパディング）
+    var btnDefs = [
+      { text: 'ORCAを開く',      screen: 'K02', cls: 'btn btn-success' },
+      { text: '中途データを開く',  screen: 'K10', cls: 'btn btn-success' },
+      { text: '受付',             screen: 'K01', cls: 'btn btn-info', white: true }
+    ];
+
+    // ブロック作成
+    var block = document.createElement('div');
+    block.id = 'orca-btn-block';
+    block.style.cssText = 'margin-top: 8px; display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap;';
+
+    btnDefs.forEach(function (def) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = def.cls;
+      btn.textContent = def.text;
+      if (def.white) btn.style.color = '#fff';
+      btn.addEventListener('click', function () {
+        var url = buildOrcaUrl(def.screen, def.padded);
+        if (url) window.open(url, '_blank');
+      });
+      block.appendChild(btn);
+    });
+
+    // 一括送信ボタンの親要素の後に挿入
+    var parentEl = allSubmitBtn.parentElement;
+    parentEl.parentNode.insertBefore(block, parentEl.nextSibling);
+    console.log('[ORCA Helper] ORCAボタンブロックを追加しました');
+  }
+
   // content.js からの初回適用指示
   document.addEventListener('orca-helper-apply', function (e) {
     executeActions(e.detail || {});
@@ -150,5 +219,116 @@
   // content.js からの日付更新指示（適用ボタン）
   document.addEventListener('orca-helper-set-dates', function (e) {
     handleDateUpdate(e.detail || {});
+  });
+
+  // ========================================
+  // ORCA API プロキシ経由送信
+  // ========================================
+
+  var PROXY_URL = 'http://localhost:5100';
+
+  /**
+   * インジェクションが有効かどうかチェック
+   */
+  function isInjectEnabled() {
+    return document.documentElement.getAttribute('data-orca-inject') === 'true';
+  }
+
+  /**
+   * ORCA APIプロキシにXMLを送信（820コード注入付き）
+   */
+  function sendToProxy(xmlStr) {
+    console.log('[ORCA Helper] === プロキシ送信開始 ===');
+    console.log('[ORCA Helper] XML長さ:', xmlStr.length);
+
+    fetch(PROXY_URL + '/api/medical/send-with-codes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        xml: xmlStr,
+        class_type: '01',
+        inject_820: true
+      })
+    })
+    .then(function (res) { return res.json(); })
+    .then(function (data) {
+      if (data.success) {
+        console.log('[ORCA Helper] ✅ プロキシ送信成功' + (data.injected ? '（820注入済み）' : ''));
+      } else {
+        console.error('[ORCA Helper] ❌ プロキシ送信失敗:', data.body);
+      }
+    })
+    .catch(function (err) {
+      console.error('[ORCA Helper] ❌ プロキシ接続エラー:', err.message);
+      console.log('[ORCA Helper] → python server.py を起動しているか確認してください');
+    });
+  }
+
+  /**
+   * XHRインターセプト: ペイロードをキャプチャし、セコム送信成功後にプロキシへ転送
+   */
+  function setupXhrInterceptor() {
+    var origOpen = XMLHttpRequest.prototype.open;
+    var origSend = XMLHttpRequest.prototype.send;
+
+    XMLHttpRequest.prototype.open = function (method, url) {
+      this._orcaHelperUrl = url;
+      return origOpen.apply(this, arguments);
+    };
+
+    XMLHttpRequest.prototype.send = function (body) {
+      var xhr = this;
+
+      // /api/order/send へのリクエストのみ対象
+      if (xhr._orcaHelperUrl && xhr._orcaHelperUrl.indexOf('/api/order/send') !== -1 && isInjectEnabled()) {
+        console.log('[ORCA Helper] === セコム送信検知 ===');
+
+        // ペイロードからXMLを抽出
+        var capturedXml = null;
+        if (typeof body === 'string' && body.length > 0 && body.charAt(0) === '{') {
+          try {
+            var jsonData = JSON.parse(body);
+            if (jsonData && jsonData.API_REQUEST) {
+              capturedXml = jsonData.API_REQUEST;
+              console.log('[ORCA Helper] XMLキャプチャ成功, 長さ:', capturedXml.length);
+            }
+          } catch (e) {
+            console.log('[ORCA Helper] JSONパース失敗:', e.message);
+          }
+        }
+
+        // セコム送信成功後にプロキシへ転送
+        if (capturedXml) {
+          xhr.addEventListener('load', function () {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              console.log('[ORCA Helper] セコム送信成功 → プロキシへ転送');
+              sendToProxy(capturedXml);
+            } else {
+              console.warn('[ORCA Helper] セコム送信失敗 (status=' + xhr.status + ') → プロキシ送信スキップ');
+            }
+          });
+        }
+      }
+
+      // セコムへの送信はそのまま通す
+      return origSend.call(this, body);
+    };
+
+    console.log('[ORCA Helper] XHRインターセプター設置完了');
+  }
+
+  // content.js からのインジェクション設定変更
+  document.addEventListener('orca-helper-inject-toggle', function (e) {
+    var enabled = e.detail && e.detail.enabled;
+    document.documentElement.setAttribute('data-orca-inject', enabled ? 'true' : 'false');
+    console.log('[ORCA Helper] コードインジェクション: ' + (enabled ? 'ON' : 'OFF'));
+  });
+
+  // XHRインターセプター設置
+  setupXhrInterceptor();
+
+  // ORCAボタンブロック追加（VM取得後）
+  getVM(function (vm) {
+    injectOrcaButtons(vm);
   });
 })();

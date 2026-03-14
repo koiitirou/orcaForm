@@ -14,7 +14,8 @@
     autoSearch: 'autoSearchEnabled',
     sidebarOpen: 'sidebarOpen',
     savedStartDate: 'savedStartDate',
-    savedEndDate: 'savedEndDate'
+    savedEndDate: 'savedEndDate',
+    injectCode: 'injectCodeEnabled'
   };
 
   var SIDEBAR_WIDTH = 280;
@@ -154,9 +155,22 @@
       '      </div>',
       '    </div>',
       '',
+      '    <div class="setting-card" id="card-injectCode">',
+      '      <div class="setting-row">',
+      '        <div>',
+      '          <div class="setting-label">処方コード付加</div>',
+      '          <div class="setting-desc">212処方時 .820/099999908/120002910 を自動追加</div>',
+      '        </div>',
+      '        <label class="toggle-switch">',
+      '          <input type="checkbox" id="orca-toggle-injectCode">',
+      '          <span class="toggle-slider"></span>',
+      '        </label>',
+      '      </div>',
+      '    </div>',
+      '',
       '  </div>',
       '  <div class="sidebar-footer">',
-      '    <span>ORCA Helper v2.3.0</span>',
+      '    <span>ORCA Helper v3.0.0</span>',
       '  </div>',
       '</div>'
     ].join('\n');
@@ -224,6 +238,19 @@
     chrome.storage.local.set(obj);
   }
 
+  function setActiveMonthBtn(activeId) {
+    ['orca-prev-month', 'orca-cur-month', 'orca-full-month', 'orca-next-month'].forEach(function (id) {
+      var btn = document.getElementById(id);
+      if (btn) {
+        if (id === activeId) {
+          btn.classList.add('current');
+        } else {
+          btn.classList.remove('current');
+        }
+      }
+    });
+  }
+
   function setupDateControls() {
     var startInput = document.getElementById('orca-start-date');
     var endInput = document.getElementById('orca-end-date');
@@ -240,6 +267,7 @@
       startInput.value = range.start;
       endInput.value = range.end;
       saveDates(range.start, range.end);
+      setActiveMonthBtn('orca-prev-month');
     });
 
     // 現在ボタン（当月1日〜今日）
@@ -249,6 +277,7 @@
       startInput.value = start;
       endInput.value = end;
       saveDates(start, end);
+      setActiveMonthBtn('orca-cur-month');
     });
 
     // 当月ボタン（当月1日〜当月末）
@@ -257,6 +286,7 @@
       startInput.value = range.start;
       endInput.value = range.end;
       saveDates(range.start, range.end);
+      setActiveMonthBtn('orca-full-month');
     });
 
     // 次月ボタン（次月1日〜次月末）
@@ -265,6 +295,7 @@
       startInput.value = range.start;
       endInput.value = range.end;
       saveDates(range.start, range.end);
+      setActiveMonthBtn('orca-next-month');
     });
 
     // 適用ボタン
@@ -293,7 +324,8 @@
     var toggles = [
       { id: 'orca-toggle-autoDate', key: STORAGE_KEYS.autoDate, card: 'card-autoDate' },
       { id: 'orca-toggle-statusBlank', key: STORAGE_KEYS.statusBlank, card: 'card-statusBlank' },
-      { id: 'orca-toggle-autoSearch', key: STORAGE_KEYS.autoSearch, card: 'card-autoSearch' }
+      { id: 'orca-toggle-autoSearch', key: STORAGE_KEYS.autoSearch, card: 'card-autoSearch' },
+      { id: 'orca-toggle-injectCode', key: STORAGE_KEYS.injectCode, card: 'card-injectCode' }
     ];
 
     toggles.forEach(function (t) {
@@ -308,6 +340,13 @@
         if (t.id === 'orca-toggle-autoDate') {
           updateDateSectionVisibility(el.checked);
         }
+
+        // コードインジェクショントグルの場合、page_script.jsに通知
+        if (t.id === 'orca-toggle-injectCode') {
+          document.dispatchEvent(new CustomEvent('orca-helper-inject-toggle', {
+            detail: { enabled: el.checked }
+          }));
+        }
       });
     });
   }
@@ -318,11 +357,13 @@
   function loadAndApplySettings() {
     chrome.storage.local.get(
       [STORAGE_KEYS.autoDate, STORAGE_KEYS.statusBlank, STORAGE_KEYS.autoSearch,
-       STORAGE_KEYS.sidebarOpen, STORAGE_KEYS.savedStartDate, STORAGE_KEYS.savedEndDate],
+       STORAGE_KEYS.sidebarOpen, STORAGE_KEYS.savedStartDate, STORAGE_KEYS.savedEndDate,
+       STORAGE_KEYS.injectCode],
       function (result) {
         var autoDate = result[STORAGE_KEYS.autoDate] || false;
         var statusBlank = result[STORAGE_KEYS.statusBlank] || false;
         var autoSearch = result[STORAGE_KEYS.autoSearch] || false;
+        var injectCode = result[STORAGE_KEYS.injectCode] || false;
         var sidebarOpenState = result[STORAGE_KEYS.sidebarOpen] || false;
         var savedStart = result[STORAGE_KEYS.savedStartDate] || getFirstDayOfMonthStr();
         var savedEnd = result[STORAGE_KEYS.savedEndDate] || getTodayStr();
@@ -340,10 +381,12 @@
         document.getElementById('orca-toggle-autoDate').checked = autoDate;
         document.getElementById('orca-toggle-statusBlank').checked = statusBlank;
         document.getElementById('orca-toggle-autoSearch').checked = autoSearch;
+        document.getElementById('orca-toggle-injectCode').checked = injectCode;
 
         updateCardStyle('card-autoDate', autoDate);
         updateCardStyle('card-statusBlank', statusBlank);
         updateCardStyle('card-autoSearch', autoSearch);
+        updateCardStyle('card-injectCode', injectCode);
         updateDateSectionVisibility(autoDate);
 
         // page_script.js に適用を指示（保存された日付を使用）
@@ -361,6 +404,11 @@
             }
           }));
         }
+
+        // コードインジェクション状態をpage_script.jsに通知
+        document.dispatchEvent(new CustomEvent('orca-helper-inject-toggle', {
+          detail: { enabled: injectCode }
+        }));
       }
     );
   }

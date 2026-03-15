@@ -106,18 +106,24 @@
       // 3. 会計ボタンチェック
       if (actions.indexOf('accountCheck') !== -1) {
         // 「会計ボタンでORCA画面を開く」チェックボックスをONにする
-        if (typeof vm.is_weborca_kaikei === 'function') {
-          vm.is_weborca_kaikei(true);
+        if (typeof vm.is_weborcaOpen === 'function') {
+          vm.is_weborcaOpen(true);
           actionLog.push('会計ボタンチェック=ON');
         } else {
-          // フォールバック: ラベルテキストからチェックボックスを探す
-          var labels = document.querySelectorAll('label');
-          for (var li = 0; li < labels.length; li++) {
-            if (labels[li].textContent.indexOf('会計ボタンでORCA画面を開く') !== -1) {
-              var cb = labels[li].querySelector('input[type="checkbox"]') || labels[li].parentElement.querySelector('input[type="checkbox"]');
-              if (cb && !cb.checked) { cb.click(); }
-              actionLog.push('会計ボタンチェック=ON');
-              break;
+          // フォールバック: IDやラベルから探す
+          var fallbackCb = document.querySelector('#weborcaOpen input[type="checkbox"]');
+          if (fallbackCb && !fallbackCb.checked) {
+            fallbackCb.click();
+            actionLog.push('会計ボタンチェック=ON');
+          } else {
+            var labels = document.querySelectorAll('label');
+            for (var li = 0; li < labels.length; li++) {
+              if (labels[li].textContent.indexOf('会計ボタンでORCA画面を開く') !== -1) {
+                var cb = labels[li].querySelector('input[type="checkbox"]') || labels[li].parentElement.querySelector('input[type="checkbox"]');
+                if (cb && !cb.checked) { cb.click(); }
+                actionLog.push('会計ボタンチェック=ON');
+                break;
+              }
             }
           }
         }
@@ -202,7 +208,7 @@
 
     // ボタン定義
     var btnDefs = [
-      { text: 'ORCAを開く',      screen: 'K02', cls: 'btn btn-success' },
+      { text: '患者を開く',      screen: 'K02', cls: 'btn btn-success' },
       { text: '中途データを開く',  screen: 'K10', cls: 'btn btn-success' },
       { text: '一括送信して中途データ', screen: 'K10', cls: 'btn btn-success', action: 'batchThenChuto' }
     ];
@@ -210,7 +216,7 @@
     // ブロック作成
     var block = document.createElement('div');
     block.id = 'orca-btn-block';
-    block.style.cssText = 'margin-top: 8px; display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap;';
+    block.style.cssText = 'margin-top: 12px; padding-top: 12px; border-top: 1px dotted rgba(0,0,0,0.1); display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; width: 100%; clear: both; align-items: center;';
 
     btnDefs.forEach(function (def) {
       var btn = document.createElement('button');
@@ -238,7 +244,8 @@
       block.appendChild(btn);
     });
 
-    // 一括送信ボタンの親要素の後に挿入
+    // 一括送信ボタンの親要素(ブロック)のさらに親に挿入して横並びを防止
+    // ※ 既存の親(parentEl)が flex 等で横並びになっている場合は、その「後」に独立した段として追加
     var parentEl = allSubmitBtn.parentElement;
     parentEl.parentNode.insertBefore(block, parentEl.nextSibling);
     console.log('[ORCA Helper] ORCAボタンブロックを追加しました');

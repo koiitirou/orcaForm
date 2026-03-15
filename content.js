@@ -18,6 +18,8 @@
     injectCode: 'injectCodeEnabled',
     debugMode: 'debugModeEnabled',
     accountCheck: 'accountCheckEnabled',
+    themeDark: 'themeDarkEnabled',
+    activeMonthBtn: 'activeMonthBtn',
     injectClass: 'injectClass',
     injectCode1: 'injectCode1',
     injectCode2: 'injectCode2'
@@ -107,8 +109,20 @@
       '  <div class="sidebar-header">',
       '    <h2>ORCA Helper</h2>',
       '    <button class="sidebar-close" id="orca-sidebar-close" title="閉じる">✕</button>',
-      '  </div>',
       '  <div class="sidebar-content">',
+      '',
+      '    <div class="setting-card" id="card-themeDark">',
+      '      <div class="setting-row">',
+      '        <div>',
+      '          <div class="setting-label">テーマ設定</div>',
+      '          <div class="setting-desc">ダークモードを使用する</div>',
+      '        </div>',
+      '        <label class="toggle-switch">',
+      '          <input type="checkbox" id="orca-toggle-themeDark">',
+      '          <span class="toggle-slider"></span>',
+      '        </label>',
+      '      </div>',
+      '    </div>',
       '',
       '    <div class="setting-card" id="card-autoDate">',
       '      <div class="setting-row">',
@@ -308,16 +322,23 @@
         }
       }
     });
+    // 選択状態を保存
+    var obj = {};
+    obj[STORAGE_KEYS.activeMonthBtn] = activeId;
+    chrome.storage.local.set(obj);
   }
 
   function setupDateControls() {
     var startInput = document.getElementById('orca-start-date');
     var endInput = document.getElementById('orca-end-date');
 
-    // 保存された日付を復元、なければデフォルト
-    chrome.storage.local.get([STORAGE_KEYS.savedStartDate, STORAGE_KEYS.savedEndDate], function (result) {
+    // 保存された日付とアクティブボタンを復元
+    chrome.storage.local.get([STORAGE_KEYS.savedStartDate, STORAGE_KEYS.savedEndDate, STORAGE_KEYS.activeMonthBtn], function (result) {
       startInput.value = result[STORAGE_KEYS.savedStartDate] || getFirstDayOfMonthStr();
       endInput.value = result[STORAGE_KEYS.savedEndDate] || getTodayStr();
+      // ボタンの色を復元（デフォルトは「現在」）
+      var savedBtn = result[STORAGE_KEYS.activeMonthBtn] || 'orca-cur-month';
+      setActiveMonthBtn(savedBtn);
     });
 
     // 前月ボタン（前月1日〜前月末）
@@ -381,6 +402,7 @@
 
   function setupToggleListeners() {
     var toggles = [
+      { id: 'orca-toggle-themeDark', key: STORAGE_KEYS.themeDark, card: 'card-themeDark' },
       { id: 'orca-toggle-autoDate', key: STORAGE_KEYS.autoDate, card: 'card-autoDate' },
       { id: 'orca-toggle-statusBlank', key: STORAGE_KEYS.statusBlank, card: 'card-statusBlank' },
       { id: 'orca-toggle-autoSearch', key: STORAGE_KEYS.autoSearch, card: 'card-autoSearch' },
@@ -396,6 +418,14 @@
         obj[t.key] = el.checked;
         chrome.storage.local.set(obj);
         updateCardStyle(t.card, el.checked);
+        // トグルごとの個別処理
+        if (t.id === 'orca-toggle-themeDark') {
+          if (el.checked) {
+            document.body.classList.add('orca-theme-dark');
+          } else {
+            document.body.classList.remove('orca-theme-dark');
+          }
+        }
 
         // 自動日付トグルの場合、日付セクションの表示を更新
         if (t.id === 'orca-toggle-autoDate') {
@@ -447,10 +477,11 @@
   // ========================================
   function loadAndApplySettings() {
     chrome.storage.local.get(
-      [STORAGE_KEYS.autoDate, STORAGE_KEYS.statusBlank, STORAGE_KEYS.autoSearch,
-       STORAGE_KEYS.sidebarOpen, STORAGE_KEYS.savedStartDate, STORAGE_KEYS.savedEndDate,
+      [STORAGE_KEYS.themeDark, STORAGE_KEYS.autoDate, STORAGE_KEYS.statusBlank, STORAGE_KEYS.autoSearch,
+       STORAGE_KEYS.accountCheck, STORAGE_KEYS.sidebarOpen, STORAGE_KEYS.savedStartDate, STORAGE_KEYS.savedEndDate,
        STORAGE_KEYS.injectCode, STORAGE_KEYS.debugMode],
       function (result) {
+        var themeDark = result[STORAGE_KEYS.themeDark] || false;
         var autoDate = result[STORAGE_KEYS.autoDate] || false;
         var statusBlank = result[STORAGE_KEYS.statusBlank] || false;
         var autoSearch = result[STORAGE_KEYS.autoSearch] || false;
@@ -460,6 +491,13 @@
         var sidebarOpenState = result[STORAGE_KEYS.sidebarOpen] || false;
         var savedStart = result[STORAGE_KEYS.savedStartDate] || getFirstDayOfMonthStr();
         var savedEnd = result[STORAGE_KEYS.savedEndDate] || getTodayStr();
+
+        // テーマの適用
+        if (themeDark) {
+          document.body.classList.add('orca-theme-dark');
+        } else {
+          document.body.classList.remove('orca-theme-dark');
+        }
 
         // サイドバーの開閉状態を復元
         if (sidebarOpenState) {
@@ -471,6 +509,8 @@
         document.getElementById('orca-end-date').value = savedEnd;
 
         // UIに反映
+        var themeToggle = document.getElementById('orca-toggle-themeDark');
+        if (themeToggle) themeToggle.checked = themeDark;
         document.getElementById('orca-toggle-autoDate').checked = autoDate;
         document.getElementById('orca-toggle-statusBlank').checked = statusBlank;
         document.getElementById('orca-toggle-autoSearch').checked = autoSearch;

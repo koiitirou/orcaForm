@@ -2,6 +2,80 @@
    ORCA Helper - Layout & Sidebar Styles
    ======================================== */
 
+:root {
+  --orca-bg-grad: linear-gradient(135deg, #ffffff, #f8fbff);
+  --orca-float-border: rgba(126,184,218,0.3);
+  --orca-float-shadow: rgba(0,0,0,0.08);
+  --orca-accent: #7eb8da;
+  --orca-accent-hover: rgba(126,184,218,0.25);
+  --orca-sidebar-bg: #fdfdfd;
+  --orca-border: #e2e8f0;
+  --orca-sidebar-shadow: rgba(0,0,0,0.06);
+  --orca-header-bg: #fff;
+  --orca-text-main: #475569;
+  --orca-text-sub: #64748b;
+  --orca-close-color: #94a3b8;
+  --orca-close-hover-bg: #f8fafc;
+  --orca-close-hover-color: #64748b;
+  --orca-card-bg: #ffffff;
+  --orca-card-border: #e2e8f0;
+  --orca-card-shadow: rgba(0,0,0,0.02);
+  --orca-card-active-bg: #eef6fb;
+  --orca-card-active-border: rgba(126,184,218,0.4);
+  --orca-toggle-bg: #cbd5e1;
+  --orca-toggle-knob: #fff;
+  --orca-toggle-knob-shadow: rgba(0,0,0,0.1);
+  --orca-status-bg: #f8fafc;
+  --orca-date-input-bg: #fff;
+  --orca-date-input-border: #e2e8f0;
+  --orca-btn-bg: #ffffff;
+  --orca-btn-border: #e2e8f0;
+  --orca-btn-hover-bg: #eef6fb;
+  --orca-btn-hover-border: rgba(126,184,218,0.3);
+  --orca-btn-text: #64748b;
+  --orca-btn-active-bg: #eef6fb;
+  --orca-btn-active-border: rgba(126,184,218,0.4);
+  --orca-btn-active-text: #5a9ec0;
+  --orca-apply-bg: linear-gradient(135deg, #7eb8da 0%, #93c5e6 100%);
+}
+
+body.orca-theme-dark {
+  --orca-bg-grad: linear-gradient(135deg, #1a1a2e, #0f3460);
+  --orca-float-border: rgba(79,172,254,0.3);
+  --orca-float-shadow: rgba(0,0,0,0.4);
+  --orca-accent: #4facfe;
+  --orca-accent-hover: rgba(79,172,254,0.4);
+  --orca-sidebar-bg: linear-gradient(180deg, #1a1a2e 0%, #16213e 40%, #0f3460 100%);
+  --orca-border: rgba(255,255,255,0.08); /* Adjusted to match original */
+  --orca-sidebar-shadow: rgba(0,0,0,0.4);
+  --orca-header-bg: transparent;
+  --orca-text-main: #ffffff;
+  --orca-text-sub: rgba(255,255,255,0.4);
+  --orca-close-color: rgba(255,255,255,0.5);
+  --orca-close-hover-bg: rgba(255,82,82,0.15);
+  --orca-close-hover-color: #ff5252;
+  --orca-card-bg: rgba(255,255,255,0.04);
+  --orca-card-border: rgba(255,255,255,0.07);
+  --orca-card-shadow: transparent;
+  --orca-card-active-bg: rgba(79,172,254,0.06);
+  --orca-card-active-border: rgba(79,172,254,0.35);
+  --orca-toggle-bg: rgba(255,255,255,0.12);
+  --orca-toggle-knob: #fff;
+  --orca-toggle-knob-shadow: rgba(0,0,0,0.3);
+  --orca-status-bg: rgba(0,0,0,0.25);
+  --orca-date-input-bg: rgba(255,255,255,0.08);
+  --orca-date-input-border: rgba(255,255,255,0.12);
+  --orca-btn-bg: rgba(255,255,255,0.06);
+  --orca-btn-border: rgba(255,255,255,0.1);
+  --orca-btn-hover-bg: rgba(79,172,254,0.12);
+  --orca-btn-hover-border: rgba(79,172,254,0.3);
+  --orca-btn-text: rgba(255,255,255,0.7);
+  --orca-btn-active-bg: rgba(79,172,254,0.1);
+  --orca-btn-active-border: rgba(79,172,254,0.25);
+  --orca-btn-active-text: #4facfe;
+  --orca-apply-bg: linear-gradient(135deg, #4facfe 0%, #00c6fb 100%);
+}
+
 /* Body transition for smooth margin change */
 body {
   transition: margin-right 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
@@ -17,23 +91,22 @@ body {
   width: 40px;
   height: 40px;
   z-index: 1045;
-  background: linear-gradient(135deg, #1a1a2e, #0f3460);
-  border: 1px solid rgba(79, 172, 254, 0.3);
+  background: var(--orca-bg-grad);
+  border: 1px solid var(--orca-float-border);
   border-radius: 10px;
-  color: #4facfe;
+  color: var(--orca-accent);
   font-size: 18px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 12px var(--orca-float-shadow);
   transition: all 0.25s ease;
   line-height: 1;
 }
 
 #orca-helper-float-btn:hover {
-  background: linear-gradient(135deg, #16213e, #1a3a6e);
-  box-shadow: 0 4px 16px rgba(79, 172, 254, 0.25);
+  box-shadow: 0 4px 16px var(--orca-accent-hover);
   transform: scale(1.05);
 }
 
@@ -51,7 +124,7 @@ body {
   width: 0;
   height: 100vh;
   z-index: 1040;
-  font-family: 'Segoe UI', 'Meiryo', sans-serif;
+  font-family: 'Segoe UI', 'Meiryo', "ヒラギノ角ゴ ProN W3", sans-serif;
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
 }
@@ -63,9 +136,9 @@ body {
 #orca-helper-sidebar .sidebar-inner {
   width: 280px;
   height: 100%;
-  background: linear-gradient(180deg, #1a1a2e 0%, #16213e 40%, #0f3460 100%);
-  border-left: 1px solid rgba(79, 172, 254, 0.15);
-  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.4);
+  background: var(--orca-sidebar-bg);
+  border-left: 1px solid var(--orca-border);
+  box-shadow: -4px 0 24px var(--orca-sidebar-shadow);
   display: flex;
   flex-direction: column;
   overflow-y: auto;
@@ -73,18 +146,20 @@ body {
 
 /* Header */
 #orca-helper-sidebar .sidebar-header {
-  padding: 16px 16px 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--orca-border);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
+  position: relative;
   flex-shrink: 0;
+  background: var(--orca-header-bg);
 }
 
 #orca-helper-sidebar .sidebar-header h2 {
   font-size: 14px;
-  font-weight: 600;
-  color: #ffffff;
+  font-weight: bold;
+  color: var(--orca-text-main);
   margin: 0;
   letter-spacing: 0.5px;
 }
@@ -92,10 +167,10 @@ body {
 #orca-helper-sidebar .sidebar-close {
   width: 28px;
   height: 28px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--orca-card-bg);
+  border: 1px solid var(--orca-card-border);
   border-radius: 6px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--orca-close-color);
   font-size: 14px;
   cursor: pointer;
   display: flex;
@@ -103,12 +178,15 @@ body {
   justify-content: center;
   transition: all 0.2s ease;
   line-height: 1;
+  position: absolute;
+  top: 10px;
+  right: 12px;
 }
 
 #orca-helper-sidebar .sidebar-close:hover {
-  background: rgba(255, 82, 82, 0.15);
-  border-color: rgba(255, 82, 82, 0.3);
-  color: #ff5252;
+  background: var(--orca-close-hover-bg);
+  border-color: var(--orca-close-hover-color);
+  color: var(--orca-close-hover-color);
 }
 
 /* Content */
@@ -122,21 +200,21 @@ body {
 
 /* Setting card */
 #orca-helper-sidebar .setting-card {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: var(--orca-card-bg);
+  border: 1px solid var(--orca-card-border);
   border-radius: 10px;
   padding: 14px;
   transition: all 0.25s ease;
+  box-shadow: 0 2px 8px var(--orca-card-shadow);
 }
 
 #orca-helper-sidebar .setting-card:hover {
-  background: rgba(255, 255, 255, 0.07);
-  border-color: rgba(79, 172, 254, 0.2);
+  border-color: var(--orca-card-active-border);
 }
 
 #orca-helper-sidebar .setting-card.active {
-  border-color: rgba(79, 172, 254, 0.35);
-  background: rgba(79, 172, 254, 0.06);
+  border-color: var(--orca-card-active-border);
+  background: var(--orca-card-active-bg);
 }
 
 #orca-helper-sidebar .setting-row {
@@ -149,13 +227,13 @@ body {
 #orca-helper-sidebar .setting-label {
   font-size: 12px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--orca-text-main);
   margin-bottom: 2px;
 }
 
 #orca-helper-sidebar .setting-desc {
   font-size: 10px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--orca-text-sub);
   line-height: 1.4;
 }
 
@@ -181,7 +259,7 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--orca-toggle-bg);
   border-radius: 22px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -193,15 +271,15 @@ body {
   width: 16px;
   left: 3px;
   bottom: 3px;
-  background: #ffffff;
+  background: var(--orca-toggle-knob);
   border-radius: 50%;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 1px 3px var(--orca-toggle-knob-shadow);
 }
 
 #orca-helper-sidebar .toggle-switch input:checked + .toggle-slider {
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-  box-shadow: 0 0 10px rgba(79, 172, 254, 0.35);
+  background: var(--orca-accent);
+  box-shadow: 0 0 10px var(--orca-accent-hover);
 }
 
 #orca-helper-sidebar .toggle-switch input:checked + .toggle-slider::before {
@@ -212,7 +290,7 @@ body {
 #orca-helper-sidebar .date-section {
   margin-top: 12px;
   padding-top: 10px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--orca-border);
   display: none;
 }
 
@@ -225,17 +303,17 @@ body {
 
 #orca-helper-sidebar .date-label {
   font-size: 10px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--orca-text-sub);
   width: 28px;
   flex-shrink: 0;
 }
 
 #orca-helper-sidebar .date-input {
   flex: 1;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--orca-date-input-bg);
+  border: 1px solid var(--orca-date-input-border);
   border-radius: 6px;
-  color: #ffffff;
+  color: var(--orca-text-main);
   padding: 5px 8px;
   font-size: 11px;
   font-family: 'Segoe UI', 'Meiryo', sans-serif;
@@ -244,10 +322,10 @@ body {
 }
 
 #orca-helper-sidebar .date-input:focus {
-  border-color: rgba(79, 172, 254, 0.5);
+  border-color: var(--orca-accent);
 }
 
-#orca-helper-sidebar .date-input::-webkit-calendar-picker-indicator {
+body.orca-theme-dark #orca-helper-sidebar .date-input::-webkit-calendar-picker-indicator {
   filter: invert(0.7);
   cursor: pointer;
 }
@@ -260,10 +338,10 @@ body {
 
 #orca-helper-sidebar .month-btn {
   flex: 1;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--orca-btn-bg);
+  border: 1px solid var(--orca-btn-border);
   border-radius: 6px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--orca-btn-text);
   font-size: 11px;
   padding: 5px 0;
   cursor: pointer;
@@ -272,20 +350,20 @@ body {
 }
 
 #orca-helper-sidebar .month-btn:hover {
-  background: rgba(79, 172, 254, 0.12);
-  border-color: rgba(79, 172, 254, 0.3);
-  color: #ffffff;
+  background: var(--orca-btn-hover-bg);
+  border-color: var(--orca-btn-hover-border);
+  color: var(--orca-text-main);
 }
 
 #orca-helper-sidebar .month-btn.current {
-  background: rgba(79, 172, 254, 0.1);
-  border-color: rgba(79, 172, 254, 0.25);
-  color: #4facfe;
+  background: var(--orca-btn-active-bg);
+  border-color: var(--orca-btn-active-border);
+  color: var(--orca-btn-active-text);
 }
 
 #orca-helper-sidebar .apply-btn {
   width: 100%;
-  background: linear-gradient(135deg, #4facfe 0%, #00c6fb 100%);
+  background: var(--orca-apply-bg);
   border: none;
   border-radius: 6px;
   color: #ffffff;
@@ -299,19 +377,19 @@ body {
 }
 
 #orca-helper-sidebar .apply-btn:hover {
-  box-shadow: 0 2px 10px rgba(79, 172, 254, 0.35);
+  box-shadow: 0 2px 10px var(--orca-accent-hover);
   transform: translateY(-1px);
 }
 
 /* Footer */
 #orca-helper-sidebar .sidebar-footer {
   padding: 10px 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid var(--orca-border);
   text-align: center;
   flex-shrink: 0;
 }
 
 #orca-helper-sidebar .sidebar-footer span {
   font-size: 9px;
-  color: rgba(255, 255, 255, 0.2);
+  color: var(--orca-text-sub);
 }

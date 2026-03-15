@@ -6,9 +6,6 @@
   "permissions": [
     "storage"
   ],
-  "host_permissions": [
-    "http://localhost:5100/*"
-  ],
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
@@ -53,6 +50,8 @@
         "https://weborca.cloud.orcamo.jp/*"
       ],
       "js": [
+        "orca_helpers.js",
+        "orca_rules/rule_820_delete.js",
         "orca_content.js"
       ],
       "run_at": "document_idle"

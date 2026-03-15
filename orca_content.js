@@ -1,26 +1,24 @@
 /**
- * ORCA Helper - WebORCA Content Script
+ * ORCA Helper - WebORCA Content Script (コア)
  *
- * WebORCA (orcamo.jp) の診療行為確認画面で
- * .820 処方箋料を自動検出し、削除剤番号に番号を自動入力する。
- * (押し出し式サイドバー版)
+ * - サイドバーUI / テーマ管理
+ * - OrcaRules レジストリのルールを自動的にUI化・監視
+ *
+ * ※ ルール固有ロジックは orca_rules/*.js に分離。
+ *   新ルール追加時はファイルを追加して OrcaRules.push() するだけ。
  */
 (function () {
   'use strict';
 
-  var STORAGE_KEY = 'orcaDeleteShohousen';
   var SIDEBAR_OPEN_KEY = 'orcaSidebarOpen';
+  var THEME_KEY = 'themeDarkEnabled';
   var SIDEBAR_WIDTH = 280;
-  var isEnabled = false;
-  var hasRun = false; // 重複実行防止
 
   // ========================================
   // スタイル注入
   // ========================================
-  function injectStyles() {
-    var style = document.createElement('style');
-    style.id = 'orca-helper-style';
-    style.textContent = [
+  function buildCoreCSS() {
+    var lines = [
       ':root {',
       '  --orca-bg-grad: linear-gradient(135deg, #ffffff, #f8fbff);',
       '  --orca-float-border: rgba(126,184,218,0.3);',
@@ -67,11 +65,9 @@
       '  --orca-toggle-knob-shadow: transparent;',
       '  --orca-status-bg: rgba(0,0,0,0.25);',
       '}',
-      
-      '/* DevTools風分割スタイル (Flexboxではなく直接幅計算を採用) */',
+      '',
       'body.orca-helper-active #client-container { width: calc(100vw - ' + SIDEBAR_WIDTH + 'px) !important; overflow: hidden !important; }',
-      
-      '/* Floatボタン */',
+      '',
       '#orca-helper-float-btn {',
       '  position: fixed; top: 16px; right: 16px; width: 44px; height: 44px;',
       '  z-index: 99998; background: var(--orca-bg-grad);',
@@ -80,12 +76,9 @@
       '  display: flex; align-items: center; justify-content: center;',
       '  box-shadow: 0 4px 12px var(--orca-float-shadow); transition: transform 0.25s, box-shadow 0.25s;',
       '}',
-      '#orca-helper-float-btn:hover {',
-      '  transform: scale(1.1); box-shadow: 0 6px 16px var(--orca-accent-hover);',
-      '}',
+      '#orca-helper-float-btn:hover { transform: scale(1.1); box-shadow: 0 6px 16px var(--orca-accent-hover); }',
       '#orca-helper-float-btn.hidden { opacity: 0; pointer-events: none; }',
-      
-      '/* サイドバーコンテナ */',
+      '',
       '#orca-helper-sidebar {',
       '  display: none; width: ' + SIDEBAR_WIDTH + 'px; position: fixed;',
       '  top: 30px; right: 0; height: calc(100vh - 30px);',
@@ -95,15 +88,13 @@
       '  flex-direction: column;',
       '}',
       '#orca-helper-sidebar.open { display: flex; }',
-      
+      '',
       '.sidebar-header {',
       '  padding: 12px 16px; border-bottom: 1px solid var(--orca-border);',
       '  display: flex; flex-direction: column; align-items: center; position: relative;',
       '  box-sizing: border-box; background: var(--orca-header-bg);',
       '}',
-      '.sidebar-header h2 {',
-      '  margin: 0; font-size: 15px; font-weight: bold; color: var(--orca-text-main);',
-      '}',
+      '.sidebar-header h2 { margin: 0; font-size: 15px; font-weight: bold; color: var(--orca-text-main); }',
       '.orca-theme-dark .sidebar-header h2 {',
       '  background: linear-gradient(135deg, #4facfe, #00f2fe);',
       '  -webkit-background-clip: text; -webkit-text-fill-color: transparent;',
@@ -115,32 +106,73 @@
       '  position: absolute; top: 10px; right: 12px;',
       '}',
       '.sidebar-close:hover { background: var(--orca-close-hover-bg); color: var(--orca-close-hover-color); }',
-      '.sidebar-content { padding: 16px; flex: 1; box-sizing: border-box; background: var(--orca-sidebar-bg); }',
-      
+      '.sidebar-content { padding: 16px; flex: 1; box-sizing: border-box; background: var(--orca-sidebar-bg); overflow-y: auto; }',
+      '',
       '.setting-card { background: var(--orca-card-bg); border: 1px solid var(--orca-card-border); border-radius: 12px; padding: 18px; box-shadow: 0 2px 8px var(--orca-card-shadow); margin-bottom: 12px; }',
       '.setting-row { display: flex; justify-content: space-between; align-items: center; }',
       '.setting-label { font-size: 14px; font-weight: 600; color: var(--orca-text-main); }',
       '.setting-desc { font-size: 12px; color: var(--orca-text-sub); margin-top: 6px; line-height: 1.4; }',
-      
+      '',
       '.toggle-switch { position: relative; width: 44px; height: 24px; display: inline-block; flex-shrink: 0; }',
       '.toggle-switch input { opacity: 0; width: 0; height: 0; }',
       '.toggle-slider { position: absolute; inset: 0; background: var(--orca-toggle-bg); border-radius: 24px; cursor: pointer; transition: 0.3s; }',
       '.toggle-slider:before { content: ""; position: absolute; width: 18px; height: 18px; left: 3px; bottom: 3px; background: var(--orca-toggle-knob); border-radius: 50%; transition: 0.3s; box-shadow: 0 1px 3px var(--orca-toggle-knob-shadow); }',
       '.toggle-switch input:checked + .toggle-slider { background: var(--orca-accent); }',
       '.toggle-switch input:checked + .toggle-slider:before { transform: translateX(20px); }',
-      
-      '.status-box { margin-top: 16px; padding: 12px; background: var(--orca-status-bg); border-radius: 8px; font-size: 12px; color: var(--orca-text-sub); min-height: 20px; border: 1px solid var(--orca-border); text-align: center; }',
-      
-      '/* 投薬料ハイライト */',
-      '.orca-highlight-touyaku { border: 3px solid #f97316 !important; background-color: #fff7ed !important; box-shadow: 0 0 8px rgba(249, 115, 22, 0.4) !important; }'
-    ].join('\n');
+      '',
+      '.status-box { margin-top: 16px; padding: 12px; background: var(--orca-status-bg); border-radius: 8px; font-size: 12px; color: var(--orca-text-sub); min-height: 20px; border: 1px solid var(--orca-border); text-align: center; }'
+    ];
+    return lines.join('\n');
+  }
+
+  function injectStyles() {
+    var style = document.createElement('style');
+    style.id = 'orca-helper-style';
+
+    // コアCSS
+    var css = buildCoreCSS();
+
+    // 各ルール固有CSSを追記
+    var rules = window.OrcaRules || [];
+    for (var i = 0; i < rules.length; i++) {
+      if (rules[i].css) {
+        css += '\n' + rules[i].css;
+      }
+    }
+
+    style.textContent = css;
     document.head.appendChild(style);
   }
 
   // ========================================
-  // UI生成とイベント設定
+  // UI生成
   // ========================================
   var sidebar, floatBtn;
+
+  /** ルールカードのHTMLを生成 */
+  function buildRuleCardsHTML() {
+    var rules = window.OrcaRules || [];
+    var html = '';
+    for (var i = 0; i < rules.length; i++) {
+      var r = rules[i];
+      html += [
+        '<div class="setting-card">',
+        '  <div class="setting-row">',
+        '    <div>',
+        '      <div class="setting-label">' + r.name + '</div>',
+        '      <div class="setting-desc">' + r.description + '</div>',
+        '    </div>',
+        '    <label class="toggle-switch">',
+        '      <input type="checkbox" id="orca-rule-toggle-' + r.id + '">',
+        '      <span class="toggle-slider"></span>',
+        '    </label>',
+        '  </div>',
+        '  <div class="status-box" id="orca-rule-status-' + r.id + '">待機中</div>',
+        '</div>'
+      ].join('\n');
+    }
+    return html;
+  }
 
   function createUI() {
     floatBtn = document.createElement('button');
@@ -152,37 +184,25 @@
     sidebar = document.createElement('div');
     sidebar.id = 'orca-helper-sidebar';
     sidebar.innerHTML = [
-      '  <div class="sidebar-header">',
-      '    <h2>ORCA Helper</h2>',
-      '    <button class="sidebar-close" id="orca-sidebar-close" title="閉じる">✕</button>',
+      '<div class="sidebar-header">',
+      '  <h2>ORCA Helper</h2>',
+      '  <button class="sidebar-close" id="orca-sidebar-close" title="閉じる">✕</button>',
+      '</div>',
+      '<div class="sidebar-content">',
+      '  <div class="setting-card">',
+      '    <div class="setting-row">',
+      '      <div>',
+      '        <div class="setting-label">テーマ設定</div>',
+      '        <div class="setting-desc">ダークモードを使用する</div>',
+      '      </div>',
+      '      <label class="toggle-switch">',
+      '        <input type="checkbox" id="orca-theme-toggle">',
+      '        <span class="toggle-slider"></span>',
+      '      </label>',
+      '    </div>',
       '  </div>',
-      '  <div class="sidebar-content">',
-      '    <div class="setting-card">',
-      '      <div class="setting-row">',
-      '        <div>',
-      '          <div class="setting-label">テーマ設定</div>',
-      '          <div class="setting-desc">ダークモードを使用する</div>',
-      '        </div>',
-      '        <label class="toggle-switch">',
-      '          <input type="checkbox" id="orca-theme-toggle">',
-      '          <span class="toggle-slider"></span>',
-      '        </label>',
-      '      </div>',
-      '    </div>',
-      '    <div class="setting-card">',
-      '      <div class="setting-row">',
-      '        <div>',
-      '          <div class="setting-label">処方箋料削除</div>',
-      '          <div class="setting-desc">.820 処方箋料を自動で削除対象に</div>',
-      '        </div>',
-      '        <label class="toggle-switch">',
-      '          <input type="checkbox" id="orca-del-toggle">',
-      '          <span class="toggle-slider"></span>',
-      '        </label>',
-      '      </div>',
-      '      <div class="status-box" id="orca-del-status">待機中</div>',
-      '    </div>',
-      '  </div>'
+      buildRuleCardsHTML(),
+      '</div>'
     ].join('\n');
     document.body.appendChild(sidebar);
 
@@ -191,17 +211,13 @@
   }
 
   // ========================================
-  // 開閉制御（DOM構造を弄らず、CSS幅のみ調整）
+  // 開閉制御
   // ========================================
-  
   function openSidebar() {
     if (sidebar) sidebar.classList.add('open');
     if (floatBtn) floatBtn.classList.add('hidden');
     document.body.classList.add('orca-helper-active');
-    
-    // WebORCAにリサイズイベントを発火させて自分自身を新しい幅に合わせさせる
-    setTimeout(function() { window.dispatchEvent(new Event('resize')); }, 50);
-
+    setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 50);
     var obj = {};
     obj[SIDEBAR_OPEN_KEY] = true;
     chrome.storage.local.set(obj);
@@ -211,243 +227,110 @@
     if (sidebar) sidebar.classList.remove('open');
     if (floatBtn) floatBtn.classList.remove('hidden');
     document.body.classList.remove('orca-helper-active');
-    
-    // WebORCAにリサイズイベントを発火させる
-    setTimeout(function() { window.dispatchEvent(new Event('resize')); }, 50);
-
+    setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 50);
     var obj = {};
     obj[SIDEBAR_OPEN_KEY] = false;
     chrome.storage.local.set(obj);
   }
 
   // ========================================
-  // .820 処方箋料の行番号を検出
+  // ルール状態管理
   // ========================================
-  function find820RowNumbers() {
-    var rows = [];
-    
-    // 表示中の画面(GtkWindow)のみを対象にする（非表示のK09等を除外）
-    var visibleScreen = null;
-    var allScreens = document.querySelectorAll('.gtk-window');
-    for (var s = 0; s < allScreens.length; s++) {
-      if (allScreens[s].style.display === 'block') {
-        visibleScreen = allScreens[s];
-      }
-    }
-    
-    var searchRoot = visibleScreen || document;
-    var allCells = searchRoot.querySelectorAll('td');
-    
-    for (var i = 0; i < allCells.length; i++) {
-      var el = allCells[i];
-      var text = el.textContent || '';
-      if (text.indexOf('.820') !== -1 && text.indexOf('処方箋料') !== -1) {
-        var row = el.closest('tr');
-        if (row) {
-          var tds = row.querySelectorAll('td');
-          // 通常のテーブル構成: [0]=番号, [1]=◎や□などの記号, [2]=診療行為名
-          if (tds.length >= 3) {
-            var numCell = tds[0];
-            var markCell = tds[1];
-            
-            // "◎" が「ない」場合は自動削除をスキップする (手入力分なので「自動算定分ではありません」エラーになる)
-            if (markCell.textContent.indexOf('◎') === -1) {
-              continue; // ◎がない行は無視
-            }
-            
-            var num = parseInt(numCell.textContent.trim(), 10);
-            if (!isNaN(num) && rows.indexOf(num) === -1) {
-              rows.push(num);
-            }
-          } else if (tds.length > 0) {
-            // 例外的な行構造のフォールバック
-            var firstCell = tds[0];
-            var num = parseInt(firstCell.textContent.trim(), 10);
-            if (!isNaN(num) && rows.indexOf(num) === -1) {
-              rows.push(num);
-            }
-          }
-        }
-      }
-    }
+  var ruleStates = {}; // { ruleId: boolean }
 
-    // フォールバック: テキスト全体から検索 (DOMでとれなかった場合のみ)
-    if (rows.length === 0) {
-      var bodyText = document.body.innerText || '';
-      var lines = bodyText.split('\n');
-      for (var j = 0; j < lines.length; j++) {
-        var line = lines[j];
-        if (line.indexOf('.820') !== -1 && line.indexOf('処方箋料') !== -1) {
-          // もし行テキスト内に "◎" が含まれて「いなければ」スキップ
-          if (line.indexOf('◎') === -1) {
-            continue;
-          }
-          
-          var match = line.match(/^\s*(\d+)/);
-          if (match) {
-            var rowNum = parseInt(match[1], 10);
-            if (!isNaN(rowNum) && rows.indexOf(rowNum) === -1) {
-              rows.push(rowNum);
-            }
-          }
-        }
-      }
+  function loadRuleStates(callback) {
+    var rules = window.OrcaRules || [];
+    var keys = [];
+    for (var i = 0; i < rules.length; i++) {
+      keys.push(rules[i].storageKey);
     }
-
-    return rows;
+    chrome.storage.local.get(keys, function (result) {
+      for (var i = 0; i < rules.length; i++) {
+        ruleStates[rules[i].id] = result[rules[i].storageKey] || false;
+      }
+      if (callback) callback();
+    });
   }
 
-  // ========================================
-  // 投薬料フィールドをハイライト
-  // ========================================
-  function highlightTouyaku() {
-    // 既存のハイライトをクリア
-    var existing = document.querySelectorAll('.orca-highlight-touyaku');
-    for (var j = 0; j < existing.length; j++) {
-      existing[j].classList.remove('orca-highlight-touyaku');
-    }
+  /** 各ルールのトグルにイベントをバインド */
+  function bindRuleToggles() {
+    var rules = window.OrcaRules || [];
+    for (var i = 0; i < rules.length; i++) {
+      (function (rule) {
+        var toggle = document.getElementById('orca-rule-toggle-' + rule.id);
+        if (!toggle) return;
 
-    // 指定されたID (当月点数累計 -> 投薬料 の入力枠) を直接探索
-    var fieldId = 'K08.fixed1.TYKHKNTEN';
-    var input = document.getElementById(fieldId);
-    
-    // もしIDで見つからなかった場合のフォールバック（name属性など）
-    if (!input) {
-      var fields = document.querySelectorAll('[name="' + fieldId + '"]');
-      if (fields.length > 0) input = fields[0];
-    }
+        toggle.checked = ruleStates[rule.id] || false;
 
-    if (input) {
-      input.classList.add('orca-highlight-touyaku');
+        // ステータス初期表示
+        var statusEl = document.getElementById('orca-rule-status-' + rule.id);
+        if (statusEl) statusEl.textContent = toggle.checked ? '監視中...' : '待機中';
+
+        toggle.addEventListener('change', function () {
+          ruleStates[rule.id] = toggle.checked;
+          var obj = {};
+          obj[rule.storageKey] = toggle.checked;
+          chrome.storage.local.set(obj);
+
+          if (rule.onToggle) rule.onToggle(toggle.checked);
+        });
+      })(rules[i]);
     }
   }
 
   // ========================================
-  // 削除剤番号フィールドに番号を入力（1回だけ）
+  // 画面遷移監視 & ルール実行オブザーバー
   // ========================================
-  function fillDeleteFields(rowNumbers) {
-    var status = document.getElementById('orca-del-status');
-    if (rowNumbers.length === 0) {
-      if (status) status.textContent = '.820 処方箋料 なし';
-      return;
-    }
-
-    // 最初のフィールドにだけ入力（1回だけ）
-    var fieldId = 'K08.fixed1.SELNUM01';
-    var field = document.getElementById(fieldId);
-    if (!field) {
-      var fields = document.querySelectorAll('[name="' + fieldId + '"], [id="' + fieldId + '"]');
-      if (fields.length > 0) field = fields[0];
-    }
-
-    if (field) {
-      field.focus();
-      field.value = String(rowNumbers[0]);
-      field.dispatchEvent(new Event('input', { bubbles: true }));
-      field.dispatchEvent(new Event('change', { bubbles: true }));
-      // Enter キーを1回だけ発火
-      field.dispatchEvent(new KeyboardEvent('keydown', {
-        key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true
-      }));
-      // focus を元に戻さない（他のフィールドに移動しない）
-      hasRun = true;
-
-      // 投薬料フィールドをハイライト
-      highlightTouyaku();
-
-      if (status) {
-        status.textContent = '✅ 行 ' + rowNumbers[0] + ' を削除対象に設定';
-      }
-    } else {
-      if (status) status.textContent = '⚠ フィールドが見つかりません';
-    }
-  }
-
-  // ========================================
-  // メイン処理
-  // ========================================
-  function runAutoDelete() {
-    if (!isEnabled || hasRun) return;
-    var rows = find820RowNumbers();
-    fillDeleteFields(rows);
-  }
-
   function startObserver() {
     var lastScreenId = '';
-    
+    var rules = window.OrcaRules || [];
+    var timers = {};
+
     var observer = new MutationObserver(function () {
-      // 画面遷移を検知: 表示中のGtkWindowが変わったらhasRunをリセット
-      var currentScreenId = '';
-      var allScreens = document.querySelectorAll('.gtk-window');
-      for (var s = 0; s < allScreens.length; s++) {
-        if (allScreens[s].style.display === 'block') {
-          currentScreenId = allScreens[s].id || '';
-        }
-      }
-      
+      var currentScreenId = window.OrcaHelpers.getScreenId();
+
+      // 画面遷移検知
       if (currentScreenId && currentScreenId !== lastScreenId) {
         lastScreenId = currentScreenId;
-        // K08画面に遷移したらhasRunをリセットして再実行可能に
-        if (currentScreenId === 'K08') {
-          hasRun = false;
-          var status = document.getElementById('orca-del-status');
-          if (status && isEnabled) status.textContent = '監視中...';
+        for (var i = 0; i < rules.length; i++) {
+          if (rules[i].triggerScreen === currentScreenId && ruleStates[rules[i].id]) {
+            if (rules[i].onScreenEnter) rules[i].onScreenEnter();
+          }
         }
       }
-      
-      if (!isEnabled || hasRun) return;
-      if (document.body.innerText.indexOf('削除剤番号') !== -1) {
-        clearTimeout(startObserver._timer);
-        startObserver._timer = setTimeout(runAutoDelete, 500);
+
+      // ルール実行チェック
+      for (var j = 0; j < rules.length; j++) {
+        (function (rule) {
+          if (!ruleStates[rule.id]) return;
+          if (rule.triggerCondition && document.body.innerText.indexOf(rule.triggerCondition) === -1) return;
+
+          clearTimeout(timers[rule.id]);
+          timers[rule.id] = setTimeout(function () {
+            rule.execute();
+          }, 500);
+        })(rules[j]);
       }
     });
     observer.observe(document.body, { childList: true, subtree: true, characterData: true });
   }
 
   // ========================================
-  // 定期的なDOM生存チェック (SPA対策)
+  // SPA対策: 定期的なDOM生存チェック
   // ========================================
   function ensureInjection() {
-    // 1. スタイルの生存確認
     if (!document.getElementById('orca-helper-style')) {
       injectStyles();
     }
-    
-    // 2. UIの生存確認 (SPAの画面遷移で body.innerHTML が書き換えられる対策)
+
     if (!document.getElementById('orca-helper-sidebar') || !document.getElementById('orca-helper-float-btn')) {
-      // 古い参照が残っていれば削除
       var oldBtn = document.getElementById('orca-helper-float-btn');
       var oldSidebar = document.getElementById('orca-helper-sidebar');
       if (oldBtn) oldBtn.remove();
       if (oldSidebar) oldSidebar.remove();
 
       createUI();
-
-      // UI再生成に伴い、イベントや状態を再バインドする
-      var toggle = document.getElementById('orca-del-toggle');
-      if (toggle) {
-        toggle.checked = isEnabled;
-        toggle.addEventListener('change', function () {
-          isEnabled = toggle.checked;
-          hasRun = false;
-          var obj = {};
-          obj[STORAGE_KEY] = isEnabled;
-          chrome.storage.local.set(obj);
-
-          var status = document.getElementById('orca-del-status');
-          if (isEnabled) {
-            status.textContent = '監視中...';
-            runAutoDelete();
-          } else {
-            status.textContent = '待機中';
-          }
-        });
-      }
-
-      var status = document.getElementById('orca-del-status');
-      if (status) {
-         status.textContent = isEnabled ? '監視中...' : '待機中';
-      }
+      bindRuleToggles();
 
       chrome.storage.local.get([SIDEBAR_OPEN_KEY], function (result) {
         if (result[SIDEBAR_OPEN_KEY]) {
@@ -458,14 +341,12 @@
       });
     }
 
-    // 3. bodyのflex状態が意図せず消された場合の復帰
+    // sidebar open状態の復帰
     chrome.storage.local.get([SIDEBAR_OPEN_KEY], function (result) {
       var shouldBeOpen = result[SIDEBAR_OPEN_KEY];
       var isActive = document.body.classList.contains('orca-helper-active');
-      
-      // クラス状態だけでなく、sidebarのDOM自身がopenクラスを持っているかも確認
       var isSidebarOpen = sidebar && sidebar.classList.contains('open');
-      
+
       if (shouldBeOpen && (!isActive || !isSidebarOpen)) {
         openSidebar();
       } else if (!shouldBeOpen && (isActive || isSidebarOpen)) {
@@ -477,21 +358,14 @@
   // ========================================
   // 初期化
   // ========================================
-  var THEME_KEY = 'themeDarkEnabled';
-
   function init() {
     injectStyles();
     createUI();
 
-    var toggle = document.getElementById('orca-del-toggle');
     var themeToggle = document.getElementById('orca-theme-toggle');
 
-    // テーマとトグル設定を読み込む
-    chrome.storage.local.get([STORAGE_KEY, SIDEBAR_OPEN_KEY, THEME_KEY], function (result) {
-      isEnabled = result[STORAGE_KEY] || false;
-      toggle.checked = isEnabled;
-      document.getElementById('orca-del-status').textContent = isEnabled ? '監視中...' : '待機中';
-
+    // テーマ & ルール状態読み込み
+    chrome.storage.local.get([SIDEBAR_OPEN_KEY, THEME_KEY], function (result) {
       // テーマ適用
       var isDark = result[THEME_KEY] || false;
       if (themeToggle) themeToggle.checked = isDark;
@@ -501,26 +375,22 @@
         document.documentElement.classList.remove('orca-theme-dark');
       }
 
+      // サイドバー開閉
       if (result[SIDEBAR_OPEN_KEY]) {
         openSidebar();
       }
-
-      if (isEnabled) runAutoDelete();
     });
 
-    toggle.addEventListener('change', function () {
-      isEnabled = toggle.checked;
-      hasRun = false; // トグル変更で再実行可能に
-      var obj = {};
-      obj[STORAGE_KEY] = isEnabled;
-      chrome.storage.local.set(obj);
+    // ルール状態を読み込んでトグルにバインド
+    loadRuleStates(function () {
+      bindRuleToggles();
 
-      var status = document.getElementById('orca-del-status');
-      if (isEnabled) {
-        status.textContent = '監視中...';
-        runAutoDelete();
-      } else {
-        status.textContent = '待機中';
+      // 初回ルール実行
+      var rules = window.OrcaRules || [];
+      for (var i = 0; i < rules.length; i++) {
+        if (ruleStates[rules[i].id] && rules[i].execute) {
+          rules[i].execute();
+        }
       }
     });
 
@@ -540,11 +410,7 @@
     }
 
     startObserver();
-    
-    // SPA対策: 定期的にDOMをチェックして消えていたら再作成する
     setInterval(ensureInjection, 1000);
-
-    if (isEnabled) setTimeout(runAutoDelete, 1000);
   }
 
   if (document.readyState === 'loading') {

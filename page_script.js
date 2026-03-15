@@ -235,39 +235,89 @@
   }
 
   /**
-   * ORCA APIプロキシにXMLを送信（820コード注入付き）
+   * XMLに820コードブロックを注入する（クライアント側で実行）
+   * コードはサイドバーの入力フィールドから読み取る
    */
-  function sendToProxy(xmlStr) {
+  function inject820Codes(xmlStr) {
+    var medClass = document.documentElement.getAttribute('data-orca-inject-class') || '820';
+    var code1 = document.documentElement.getAttribute('data-orca-inject-code1') || '099999908';
+    var code2 = document.documentElement.getAttribute('data-orca-inject-code2') || '';
+
+    // 既にこのクラスが含まれていれば注入しない
+    if (xmlStr.indexOf('>' + medClass + '<') !== -1 || xmlStr.indexOf('>.' + medClass + '<') !== -1) {
+      return xmlStr;
+    }
+
+    var block =
+      '<Medical_Information_child type="record">' +
+      '<Medical_Class type="string">' + medClass + '</Medical_Class>' +
+      '<Medical_Class_Number type="string">1</Medical_Class_Number>' +
+      '<Medication_info type="array">' +
+      '<Medication_info_child type="record">' +
+      '<Medication_Code type="string">' + code1 + '</Medication_Code>' +
+      '<Medication_Number type="string">1</Medication_Number>' +
+      '</Medication_info_child>';
+
+    // コード2が指定されている場合のみ追加
+    if (code2) {
+      block +=
+        '<Medication_info_child type="record">' +
+        '<Medication_Code type="string">' + code2 + '</Medication_Code>' +
+        '<Medication_Number type="string">1</Medication_Number>' +
+        '</Medication_info_child>';
+    }
+
+    block += '</Medication_info></Medical_Information_child>';
+
+    var closeTag = '</Medical_Information>';
+    var pos = xmlStr.lastIndexOf(closeTag);
+    if (pos === -1) return xmlStr;
+
+    return xmlStr.substring(0, pos) + block + xmlStr.substring(pos);
+  }
+  /**
+   * ORCA APIプロキシにXMLを送信（1回送信）
+   */
+  function sendToProxy(originalXml) {
     var isDebug = document.documentElement.getAttribute('data-orca-debug') === 'true';
+
+    // クライアント側で820コードを注入
+    var injectedXml = inject820Codes(originalXml);
+    var wasInjected = injectedXml !== originalXml;
+
+    if (wasInjected) {
+      console.log('[ORCA Helper] ✅ 820コード注入完了（クライアント側）');
+    }
+
     console.log('[ORCA Helper] === プロキシ送信開始 ===');
 
-    fetch(PROXY_URL + '/api/medical/send-with-codes', {
+    fetch(PROXY_URL + '/api/medical/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        xml: xmlStr,
-        class_type: '01',
-        inject_820: true
-      })
+      body: JSON.stringify({ xml: injectedXml, class_type: '01' })
     })
     .then(function (res) { return res.json(); })
     .then(function (data) {
-      if (data.success) {
-        console.log('[ORCA Helper] ✅ プロキシ送信成功' + (data.injected ? '（820注入済み）' : ''));
-      } else {
-        console.error('[ORCA Helper] ❌ プロキシ送信失敗 (status=' + data.status_code + ')');
-      }
+      console.log('[ORCA Helper] ' + (data.success ? '✅ 送信成功' : '❌ 送信失敗 (status=' + data.status_code + ')'));
 
-      // デバッグパネル表示（xmlStrはクライアント側で直接渡す）
       if (isDebug && window.__orcaDebugPanel) {
-        window.__orcaDebugPanel({ sentXml: xmlStr, serverData: data });
+        window.__orcaDebugPanel({
+          sentXml: originalXml,
+          serverData: {
+            success: data.success,
+            status_code: data.status_code,
+            body: data.body,
+            injected: wasInjected,
+            injected_xml: wasInjected ? injectedXml : null
+          }
+        });
       }
     })
     .catch(function (err) {
       console.error('[ORCA Helper] ❌ プロキシ接続エラー:', err.message);
       if (isDebug && window.__orcaDebugPanel) {
         window.__orcaDebugPanel({
-          sentXml: xmlStr,
+          sentXml: originalXml,
           serverData: { success: false, status_code: null, body: err.message, injected: false }
         });
       }
@@ -312,15 +362,11 @@
           }
         }
 
-        // セコム送信成功後にプロキシへ転送
+        // セコム送信完了後にプロキシへ転送（ステータスに関わらず）
         if (capturedXml) {
           xhr.addEventListener('load', function () {
-            if (xhr.status >= 200 && xhr.status < 300) {
-              console.log('[ORCA Helper] セコム送信成功 → プロキシへ転送');
-              sendToProxy(capturedXml);
-            } else {
-              console.warn('[ORCA Helper] セコム送信失敗 (status=' + xhr.status + ') → プロキシ送信スキップ');
-            }
+            console.log('[ORCA Helper] セコム送信完了 (status=' + xhr.status + ') → プロキシへ転送');
+            sendToProxy(capturedXml);
           });
         }
       }

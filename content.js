@@ -16,7 +16,16 @@
     savedStartDate: 'savedStartDate',
     savedEndDate: 'savedEndDate',
     injectCode: 'injectCodeEnabled',
-    debugMode: 'debugModeEnabled'
+    debugMode: 'debugModeEnabled',
+    injectClass: 'injectClass',
+    injectCode1: 'injectCode1',
+    injectCode2: 'injectCode2'
+  };
+
+  var INJECT_DEFAULTS = {
+    injectClass: '820',
+    injectCode1: '099999908',
+    injectCode2: '120002910'
   };
 
   var SIDEBAR_WIDTH = 280;
@@ -160,12 +169,26 @@
       '      <div class="setting-row">',
       '        <div>',
       '          <div class="setting-label">処方コード付加</div>',
-      '          <div class="setting-desc">212処方時 .820/099999908/120002910 を自動追加</div>',
+      '          <div class="setting-desc">212処方時に下記コードを自動追加</div>',
       '        </div>',
       '        <label class="toggle-switch">',
       '          <input type="checkbox" id="orca-toggle-injectCode">',
       '          <span class="toggle-slider"></span>',
       '        </label>',
+      '      </div>',
+      '      <div class="inject-codes-section" style="padding:8px 12px 12px;border-top:1px solid rgba(255,255,255,0.1);">',
+      '        <div style="margin-bottom:6px;">',
+      '          <label style="font-size:11px;color:#94a3b8;display:block;margin-bottom:2px;">Medical_Class</label>',
+      '          <input type="text" id="orca-inject-class" value="820" style="width:100%;padding:4px 8px;background:#1e293b;color:#e2e8f0;border:1px solid #475569;border-radius:4px;font-size:13px;box-sizing:border-box;">',
+      '        </div>',
+      '        <div style="margin-bottom:6px;">',
+      '          <label style="font-size:11px;color:#94a3b8;display:block;margin-bottom:2px;">コード1</label>',
+      '          <input type="text" id="orca-inject-code1" value="099999908" style="width:100%;padding:4px 8px;background:#1e293b;color:#e2e8f0;border:1px solid #475569;border-radius:4px;font-size:13px;box-sizing:border-box;">',
+      '        </div>',
+      '        <div>',
+      '          <label style="font-size:11px;color:#94a3b8;display:block;margin-bottom:2px;">コード2（空欄で省略）</label>',
+      '          <input type="text" id="orca-inject-code2" value="120002910" style="width:100%;padding:4px 8px;background:#1e293b;color:#e2e8f0;border:1px solid #475569;border-radius:4px;font-size:13px;box-sizing:border-box;">',
+      '        </div>',
       '      </div>',
       '    </div>',
       '',
@@ -369,6 +392,22 @@
         }
       });
     });
+
+    // 注入コード入力フィールドのイベント
+    var codeInputs = [
+      { id: 'orca-inject-class', key: STORAGE_KEYS.injectClass, attr: 'data-orca-inject-class' },
+      { id: 'orca-inject-code1', key: STORAGE_KEYS.injectCode1, attr: 'data-orca-inject-code1' },
+      { id: 'orca-inject-code2', key: STORAGE_KEYS.injectCode2, attr: 'data-orca-inject-code2' }
+    ];
+    codeInputs.forEach(function (ci) {
+      var input = document.getElementById(ci.id);
+      input.addEventListener('change', function () {
+        var obj = {};
+        obj[ci.key] = input.value.trim();
+        chrome.storage.local.set(obj);
+        document.documentElement.setAttribute(ci.attr, input.value.trim());
+      });
+    });
   }
 
   // ========================================
@@ -405,6 +444,14 @@
         document.getElementById('orca-toggle-injectCode').checked = injectCode;
         document.getElementById('orca-toggle-debugMode').checked = debugMode;
 
+        // 注入コードの値を復元
+        var iClass = result[STORAGE_KEYS.injectClass] || INJECT_DEFAULTS.injectClass;
+        var iCode1 = result[STORAGE_KEYS.injectCode1] || INJECT_DEFAULTS.injectCode1;
+        var iCode2 = (result[STORAGE_KEYS.injectCode2] !== undefined) ? result[STORAGE_KEYS.injectCode2] : INJECT_DEFAULTS.injectCode2;
+        document.getElementById('orca-inject-class').value = iClass;
+        document.getElementById('orca-inject-code1').value = iCode1;
+        document.getElementById('orca-inject-code2').value = iCode2;
+
         updateCardStyle('card-autoDate', autoDate);
         updateCardStyle('card-statusBlank', statusBlank);
         updateCardStyle('card-autoSearch', autoSearch);
@@ -412,6 +459,9 @@
         updateCardStyle('card-debugMode', debugMode);
         document.documentElement.setAttribute('data-orca-inject', injectCode ? 'true' : 'false');
         document.documentElement.setAttribute('data-orca-debug', debugMode ? 'true' : 'false');
+        document.documentElement.setAttribute('data-orca-inject-class', iClass);
+        document.documentElement.setAttribute('data-orca-inject-code1', iCode1);
+        document.documentElement.setAttribute('data-orca-inject-code2', iCode2);
         updateDateSectionVisibility(autoDate);
 
         // page_script.js に適用を指示（保存された日付を使用）

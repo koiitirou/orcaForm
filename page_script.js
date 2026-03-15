@@ -103,7 +103,27 @@
         }
       }
 
-      // 3. 自動検索
+      // 3. 会計ボタンチェック
+      if (actions.indexOf('accountCheck') !== -1) {
+        // 「会計ボタンでORCA画面を開く」チェックボックスをONにする
+        if (typeof vm.is_weborca_kaikei === 'function') {
+          vm.is_weborca_kaikei(true);
+          actionLog.push('会計ボタンチェック=ON');
+        } else {
+          // フォールバック: ラベルテキストからチェックボックスを探す
+          var labels = document.querySelectorAll('label');
+          for (var li = 0; li < labels.length; li++) {
+            if (labels[li].textContent.indexOf('会計ボタンでORCA画面を開く') !== -1) {
+              var cb = labels[li].querySelector('input[type="checkbox"]') || labels[li].parentElement.querySelector('input[type="checkbox"]');
+              if (cb && !cb.checked) { cb.click(); }
+              actionLog.push('会計ボタンチェック=ON');
+              break;
+            }
+          }
+        }
+      }
+
+      // 4. 自動検索
       if (autoSearch) {
         setTimeout(function () {
           if (typeof vm.search === 'function') {
@@ -180,11 +200,11 @@
       return null;
     }
 
-    // ボタン定義（padded: trueのものは10桁ゼロパディング）
+    // ボタン定義
     var btnDefs = [
       { text: 'ORCAを開く',      screen: 'K02', cls: 'btn btn-success' },
       { text: '中途データを開く',  screen: 'K10', cls: 'btn btn-success' },
-      { text: '受付',             screen: 'K01', cls: 'btn btn-info', white: true }
+      { text: '一括送信して中途データ', screen: 'K10', cls: 'btn btn-success', action: 'batchThenChuto' }
     ];
 
     // ブロック作成
@@ -198,10 +218,23 @@
       btn.className = def.cls;
       btn.textContent = def.text;
       if (def.white) btn.style.color = '#fff';
-      btn.addEventListener('click', function () {
-        var url = buildOrcaUrl(def.screen, def.padded);
-        if (url) window.open(url, '_blank');
-      });
+
+      if (def.action === 'batchThenChuto') {
+        btn.addEventListener('click', function () {
+          // まず一括送信ボタンをクリック
+          allSubmitBtn.click();
+          // 少し待ってから中途データ画面を開く
+          setTimeout(function () {
+            var url = buildOrcaUrl(def.screen, def.padded);
+            if (url) window.open(url, '_blank');
+          }, 1500);
+        });
+      } else {
+        btn.addEventListener('click', function () {
+          var url = buildOrcaUrl(def.screen, def.padded);
+          if (url) window.open(url, '_blank');
+        });
+      }
       block.appendChild(btn);
     });
 

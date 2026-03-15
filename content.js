@@ -17,6 +17,7 @@
     savedEndDate: 'savedEndDate',
     injectCode: 'injectCodeEnabled',
     debugMode: 'debugModeEnabled',
+    accountCheck: 'accountCheckEnabled',
     injectClass: 'injectClass',
     injectCode1: 'injectCode1',
     injectCode2: 'injectCode2'
@@ -142,7 +143,7 @@
       '    <div class="setting-card" id="card-statusBlank">',
       '      <div class="setting-row">',
       '        <div>',
-      '          <div class="setting-label">ステータス変更</div>',
+      '          <div class="setting-label">送信ステータス変更</div>',
       '          <div class="setting-desc">要送信 → 空白（全件表示）</div>',
       '        </div>',
       '        <label class="toggle-switch">',
@@ -164,6 +165,25 @@
       '        </label>',
       '      </div>',
       '    </div>',
+      '',
+      '    <div class="setting-card" id="card-accountCheck">',
+      '      <div class="setting-row">',
+      '        <div>',
+      '          <div class="setting-label">会計ボタンチェック</div>',
+      '          <div class="setting-desc">会計ボタンでORCA画面を開くをON</div>',
+      '        </div>',
+      '        <label class="toggle-switch">',
+      '          <input type="checkbox" id="orca-toggle-accountCheck">',
+      '          <span class="toggle-slider"></span>',
+      '        </label>',
+      '      </div>',
+      '    </div>',
+      '',
+      '    <div class="accordion-header" id="orca-accordion-dev" style="padding:8px 12px;margin-top:8px;cursor:pointer;color:#94a3b8;font-size:12px;display:flex;align-items:center;gap:6px;">',
+      '      <span id="orca-accordion-arrow" style="transition:transform 0.2s;display:inline-block;">▶</span>',
+      '      <span>開発者向け</span>',
+      '    </div>',
+      '    <div id="orca-accordion-body" style="display:none;">',
       '',
       '    <div class="setting-card" id="card-injectCode">',
       '      <div class="setting-row">',
@@ -203,6 +223,8 @@
       '          <span class="toggle-slider"></span>',
       '        </label>',
       '      </div>',
+      '    </div>',
+      '',
       '    </div>',
       '',
       '  </div>',
@@ -362,6 +384,7 @@
       { id: 'orca-toggle-autoDate', key: STORAGE_KEYS.autoDate, card: 'card-autoDate' },
       { id: 'orca-toggle-statusBlank', key: STORAGE_KEYS.statusBlank, card: 'card-statusBlank' },
       { id: 'orca-toggle-autoSearch', key: STORAGE_KEYS.autoSearch, card: 'card-autoSearch' },
+      { id: 'orca-toggle-accountCheck', key: STORAGE_KEYS.accountCheck, card: 'card-accountCheck' },
       { id: 'orca-toggle-injectCode', key: STORAGE_KEYS.injectCode, card: 'card-injectCode' },
       { id: 'orca-toggle-debugMode', key: STORAGE_KEYS.debugMode, card: 'card-debugMode' }
     ];
@@ -408,6 +431,15 @@
         document.documentElement.setAttribute(ci.attr, input.value.trim());
       });
     });
+
+    // アコーディオン開閉
+    document.getElementById('orca-accordion-dev').addEventListener('click', function () {
+      var body = document.getElementById('orca-accordion-body');
+      var arrow = document.getElementById('orca-accordion-arrow');
+      var isOpen = body.style.display !== 'none';
+      body.style.display = isOpen ? 'none' : 'block';
+      arrow.style.transform = isOpen ? '' : 'rotate(90deg)';
+    });
   }
 
   // ========================================
@@ -422,6 +454,7 @@
         var autoDate = result[STORAGE_KEYS.autoDate] || false;
         var statusBlank = result[STORAGE_KEYS.statusBlank] || false;
         var autoSearch = result[STORAGE_KEYS.autoSearch] || false;
+        var accountCheck = result[STORAGE_KEYS.accountCheck] || false;
         var injectCode = result[STORAGE_KEYS.injectCode] || false;
         var debugMode = result[STORAGE_KEYS.debugMode] || false;
         var sidebarOpenState = result[STORAGE_KEYS.sidebarOpen] || false;
@@ -441,6 +474,7 @@
         document.getElementById('orca-toggle-autoDate').checked = autoDate;
         document.getElementById('orca-toggle-statusBlank').checked = statusBlank;
         document.getElementById('orca-toggle-autoSearch').checked = autoSearch;
+        document.getElementById('orca-toggle-accountCheck').checked = accountCheck;
         document.getElementById('orca-toggle-injectCode').checked = injectCode;
         document.getElementById('orca-toggle-debugMode').checked = debugMode;
 
@@ -455,6 +489,7 @@
         updateCardStyle('card-autoDate', autoDate);
         updateCardStyle('card-statusBlank', statusBlank);
         updateCardStyle('card-autoSearch', autoSearch);
+        updateCardStyle('card-accountCheck', accountCheck);
         updateCardStyle('card-injectCode', injectCode);
         updateCardStyle('card-debugMode', debugMode);
         document.documentElement.setAttribute('data-orca-inject', injectCode ? 'true' : 'false');
@@ -468,6 +503,7 @@
         var actions = [];
         if (autoDate) actions.push('autoDate');
         if (statusBlank) actions.push('statusBlank');
+        if (accountCheck) actions.push('accountCheck');
 
         if (actions.length > 0 || autoSearch) {
           document.dispatchEvent(new CustomEvent('orca-helper-apply', {

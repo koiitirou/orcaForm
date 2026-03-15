@@ -32,6 +32,11 @@
       "js": ["debug_panel.js", "page_script.js"],
       "run_at": "document_idle",
       "world": "MAIN"
+    },
+    {
+      "matches": ["https://weborca.cloud.orcamo.jp/*"],
+      "js": ["orca_content.js"],
+      "run_at": "document_idle"
     }
   ]
 }

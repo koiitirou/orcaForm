@@ -1,0 +1,23 @@
+# Private keys and certificates
+*.pem
+*.key
+*.p12
+*.pfx
+*.der
+
+# Certificate files (keep if needed, but review before committing)
+# *.crt
+# *.cert
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Proxy config with credentials
+proxy/config.json
+proxy/certs/
+
+# OS files
+.DS_Store
+Thumbs.db

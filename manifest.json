@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "ORCA Helper",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "WebORCAの入力を支援する機能",
   "permissions": [
     "storage"
@@ -53,6 +53,10 @@
         "orca_helpers.js",
         "orca_rules/rule_820_delete.js",
         "orca_rules/rule_code_replace.js",
+        "orca_css.js",
+        "orca_sidebar.js",
+        "orca_theme.js",
+        "orca_rule_engine.js",
         "orca_content.js"
       ],
       "run_at": "document_idle"

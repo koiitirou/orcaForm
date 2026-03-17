@@ -6,8 +6,8 @@
  * 1. 施医総管 (842100036) — 元人数→先人数（元が空なら全てマッチ）
  * 2. 自由置換 — 任意ペア（正規表現チェック付き）
  *
- * ・マッチ = 常にハイライト / 置換は▶ボタンで手動実行
- * ・トグルOFFでも UI は表示（実行ボタン含む）
+ * ・トグルON → 自動検出＆置換（従来動作）
+ * ・▶ボタン → 手動で即時置換
  */
 (function () {
   'use strict';
@@ -17,8 +17,18 @@
     ninzuTo: 'codeReplace_ninzuTo',
     ninzuOn: 'codeReplace_ninzuOn',
     freePairs: 'codeReplace_freePairs',
-    enabled: 'codeReplace_enabled'
+    enabled: 'codeReplace_enabled',
+    highlightColor: 'codeReplace_highlightColor'
   };
+
+  var PALETTE = [
+    { color: '#ffe0e6', dark: 'rgba(244,114,182,0.15)', label: 'ピンク' },
+    { color: '#fff3cd', dark: 'rgba(245,158,11,0.15)', label: 'イエロー' },
+    { color: '#d1fae5', dark: 'rgba(52,211,153,0.15)', label: 'グリーン' },
+    { color: '#dbeafe', dark: 'rgba(96,165,250,0.15)', label: 'ブルー' },
+    { color: '#e9d5ff', dark: 'rgba(192,132,252,0.15)', label: 'パープル' },
+    { color: '#fed7aa', dark: 'rgba(251,146,60,0.15)', label: 'オレンジ' }
+  ];
 
   var ninzuFrom = '';
   var ninzuTo = '';
@@ -26,6 +36,7 @@
   var freePairs = [];
   var isEnabled = false;
   var uiBuilt = false;
+  var highlightColor = '#ffe0e6';
 
   // 保存 / 読み込み
   function saveSettings() {
@@ -39,16 +50,27 @@
 
   function loadSettings(cb) {
     chrome.storage.local.get(
-      [STORAGE.ninzuFrom, STORAGE.ninzuTo, STORAGE.ninzuOn, STORAGE.freePairs, STORAGE.enabled],
+      [STORAGE.ninzuFrom, STORAGE.ninzuTo, STORAGE.ninzuOn, STORAGE.freePairs, STORAGE.enabled, STORAGE.highlightColor],
       function (r) {
         ninzuFrom = r[STORAGE.ninzuFrom] || '';
         ninzuTo = r[STORAGE.ninzuTo] || '';
         ninzuOn = r[STORAGE.ninzuOn] || false;
         isEnabled = r[STORAGE.enabled] || false;
+        highlightColor = r[STORAGE.highlightColor] || '#ffe0e6';
         try { freePairs = JSON.parse(r[STORAGE.freePairs] || '[]'); } catch (e) { freePairs = []; }
         if (cb) cb();
       }
     );
+  }
+
+  function applyHighlightColor() {
+    var styleId = 'orca-highlight-color';
+    var el = document.getElementById(styleId);
+    if (!el) { el = document.createElement('style'); el.id = styleId; document.head.appendChild(el); }
+    var entry = PALETTE.find(function (p) { return p.color === highlightColor; });
+    var dark = entry ? entry.dark : 'rgba(244,114,182,0.15)';
+    el.textContent = '.orca-code-replaced { background-color: ' + highlightColor + ' !important; }\n' +
+      '.orca-theme-dark .orca-code-replaced { background-color: ' + dark + ' !important; }';
   }
 
   // DOM
@@ -88,16 +110,12 @@
   }
 
   // ========================================
-  // スキャン＆置換
-  // doReplace=false → ハイライトのみ, true → 実際に置換
+  // 置換実行（従来の直接実行方式）
   // ========================================
-  function scanAndReplace(doReplace) {
-    if (!isEnabled) return;
-    clearHighlights();
+  function executeReplace() {
     var inputs = getCodeInputs();
     var replacedCount = 0;
     var matchCount = 0;
-    var statusParts = [];
 
     for (var i = 0; i < inputs.length; i++) {
       var input = inputs[i];
@@ -108,20 +126,17 @@
       if (ninzuOn && ninzuTo && val.indexOf('842100036') !== -1) {
         var pattern;
         if (ninzuFrom) {
-          // 元指定あり: 特定の数字だけマッチ
           pattern = new RegExp('(842100036\\s+)(' + escRegex(ninzuFrom) + ')\\b');
         } else {
-          // 元なし: 842100036 + 任意の数字にマッチ（ワイルドカード）
           pattern = new RegExp('(842100036\\s+)(\\d+)');
         }
         var m = val.match(pattern);
         if (m) {
           matchCount++;
           highlightRow(input);
-          if (doReplace && m[2] !== ninzuTo) {
+          if (m[2] !== ninzuTo) {
             setFieldValue(input, val.replace(pattern, '$1' + ninzuTo));
             replacedCount++;
-            statusParts.push('施医総管: ' + m[2] + '→' + ninzuTo);
           }
         }
       }
@@ -137,13 +152,10 @@
         if (rx.test(val)) {
           matchCount++;
           highlightRow(input);
-          if (doReplace) {
-            var rep = val.replace(rx, pair.to);
-            if (rep !== val) {
-              setFieldValue(input, rep);
-              replacedCount++;
-              statusParts.push(pair.name || (pair.from + '→' + pair.to));
-            }
+          var rep = val.replace(rx, pair.to);
+          if (rep !== val) {
+            setFieldValue(input, rep);
+            replacedCount++;
           }
         }
       }
@@ -151,10 +163,10 @@
 
     var s = document.getElementById('orca-replace-status');
     if (s) {
-      if (doReplace && replacedCount > 0) {
+      if (replacedCount > 0) {
         s.textContent = '✅ ' + replacedCount + '件置換';
       } else if (matchCount > 0) {
-        s.textContent = '🔍 ' + matchCount + '件';
+        s.textContent = '🔍 ' + matchCount + '件マッチ';
       } else {
         s.textContent = '';
       }
@@ -180,7 +192,7 @@
     card.className = 'setting-card';
     card.id = 'card-code-replace';
 
-    // マスタートグル + ▶ 行
+    // マスタートグル行
     var headerRow = document.createElement('div');
     headerRow.className = 'setting-row';
     headerRow.innerHTML = [
@@ -188,13 +200,10 @@
       '  <div class="setting-label">コード置換</div>',
       '  <div class="setting-desc">入力コードを自動置換</div>',
       '</div>',
-      '<div class="setting-controls">',
-      '  <button class="cr-play-btn" id="cr-exec-btn" title="置換実行">▶</button>',
-      '  <label class="toggle-switch">',
-      '    <input type="checkbox" id="orca-toggle-code-replace">',
-      '    <span class="toggle-slider"></span>',
-      '  </label>',
-      '</div>'
+      '<label class="toggle-switch">',
+      '  <input type="checkbox" id="orca-toggle-code-replace">',
+      '  <span class="toggle-slider"></span>',
+      '</label>'
     ].join('');
     card.appendChild(headerRow);
 
@@ -213,10 +222,9 @@
         '<span class="cr-fixed-code">842100036</span>' +
       '</div>' +
       '<div class="cr-ninzu-inputs">' +
-        '<input type="text" id="cr-ninzu-from" class="cr-num-input" placeholder="元(空=全)" maxlength="3" value="' + esc(ninzuFrom) + '">' +
+        '<input type="text" id="cr-ninzu-from" class="cr-num-input" placeholder="元" title="元の人数（空欄＝全てマッチ）" maxlength="3" value="' + esc(ninzuFrom) + '">' +
         '<span class="cr-arrow">→</span>' +
         '<input type="text" id="cr-ninzu-to" class="cr-num-input" placeholder="先" maxlength="3" value="' + esc(ninzuTo) + '">' +
-        '<span class="cr-status" id="orca-replace-status"></span>' +
       '</div>';
     detail.appendChild(ninzuBlock);
 
@@ -232,6 +240,23 @@
     freeContainer.id = 'cr-free-pairs';
     detail.appendChild(freeContainer);
 
+    // ハイライトカラーパレット
+    var palRow = document.createElement('div');
+    palRow.className = 'cr-palette-row';
+    palRow.innerHTML = '<span class="cr-section-label">ハイライト色</span>';
+    var swatches = document.createElement('div');
+    swatches.className = 'cr-swatches';
+    for (var p = 0; p < PALETTE.length; p++) {
+      var sw = document.createElement('button');
+      sw.className = 'cr-swatch' + (PALETTE[p].color === highlightColor ? ' active' : '');
+      sw.style.background = PALETTE[p].color;
+      sw.title = PALETTE[p].label;
+      sw.dataset.color = PALETTE[p].color;
+      swatches.appendChild(sw);
+    }
+    palRow.appendChild(swatches);
+    detail.appendChild(palRow);
+
     card.appendChild(detail);
     container.appendChild(card);
 
@@ -244,7 +269,7 @@
       var obj = {};
       obj[STORAGE.enabled] = isEnabled;
       chrome.storage.local.set(obj);
-      if (isEnabled) { startPolling(); scanAndReplace(false); }
+      if (isEnabled) { startPolling(); executeReplace(); }
       else { stopPolling(); clearHighlights(); }
     });
 
@@ -264,10 +289,22 @@
       renderFreePairs();
     });
 
-    document.getElementById('cr-exec-btn').addEventListener('click', function () {
-      scanAndReplace(true);
-    });
+    // パレットクリック
+    var allSwatches = document.querySelectorAll('.cr-swatch');
+    for (var si = 0; si < allSwatches.length; si++) {
+      allSwatches[si].addEventListener('click', function () {
+        highlightColor = this.dataset.color;
+        var obj = {};
+        obj[STORAGE.highlightColor] = highlightColor;
+        chrome.storage.local.set(obj);
+        applyHighlightColor();
+        var all = document.querySelectorAll('.cr-swatch');
+        for (var k = 0; k < all.length; k++) all[k].classList.remove('active');
+        this.classList.add('active');
+      });
+    }
 
+    applyHighlightColor();
     renderFreePairs();
   }
 
@@ -338,7 +375,7 @@
         var id = inputs[i].id, v = inputs[i].value;
         if (lastVals[id] !== v) { lastVals[id] = v; changed = true; }
       }
-      if (changed) scanAndReplace(false);
+      if (changed) executeReplace();
     }, 1500);
   }
 
@@ -368,7 +405,7 @@
       });
     },
     execute: function () {
-      if (isEnabled) scanAndReplace(false);
+      if (isEnabled) executeReplace();
     },
     onScreenEnter: function () {
       clearHighlights();
@@ -376,13 +413,13 @@
     },
     onToggle: function (enabled) {
       isEnabled = enabled;
-      if (enabled) { startPolling(); scanAndReplace(false); }
+      if (enabled) { startPolling(); executeReplace(); }
       else { stopPolling(); clearHighlights(); }
     },
 
     css: [
-      '.orca-code-replaced { background-color: #fff3cd !important; transition: background-color 0.3s; }',
-      '.orca-theme-dark .orca-code-replaced { background-color: rgba(245,158,11,0.15) !important; }',
+      '.orca-code-replaced { background-color: #ffe0e6 !important; transition: background-color 0.3s; }',
+      '.orca-theme-dark .orca-code-replaced { background-color: rgba(244,114,182,0.15) !important; }',
 
       '.cr-detail { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--orca-border); }',
 
@@ -391,10 +428,9 @@
       '.cr-ninzu-header { display: flex; align-items: center; gap: 5px; margin-bottom: 4px; }',
       '.cr-ninzu-inputs { display: flex; align-items: center; gap: 5px; padding-left: 33px; }',
       '.cr-rule-label { font-size: 11px; font-weight: 600; color: var(--orca-text-main); white-space: nowrap; }',
-      '.cr-fixed-code { font-size: 10px; font-family: Consolas, monospace; color: var(--orca-accent); background: var(--orca-status-bg); padding: 2px 6px; border-radius: 3px; border: 1px solid var(--orca-border); white-space: nowrap; }',
+      '.cr-fixed-code { font-size: 12px; font-family: Consolas, monospace; color: var(--orca-accent); background: var(--orca-status-bg); padding: 2px 6px; border-radius: 3px; border: 1px solid var(--orca-border); white-space: nowrap; }',
       '.cr-num-input { width: 42px; background: var(--orca-status-bg); border: 1px solid var(--orca-border); border-radius: 4px; color: var(--orca-text-main); padding: 3px 4px; font-size: 12px; font-family: Consolas, monospace; outline: none; text-align: center; }',
       '.cr-num-input:focus { border-color: var(--orca-accent); }',
-      '.cr-status { font-size: 10px; color: var(--orca-text-sub); white-space: nowrap; margin-left: auto; }',
 
       /* ミニトグル */
       '.cr-mini-toggle { position: relative; width: 28px; height: 16px; display: inline-block; flex-shrink: 0; vertical-align: middle; }',
@@ -422,7 +458,17 @@
 
       '.cr-regex-label { display: flex; align-items: center; gap: 2px; font-size: 10px; color: var(--orca-text-sub); cursor: pointer; flex-shrink: 0; user-select: none; }',
       '.cr-regex-label input { width: 12px; height: 12px; margin: 0; }',
-      '.cr-regex-label span { font-size: 10px; }'
+      '.cr-regex-label span { font-size: 10px; }',
+
+      /* パレット */
+      '.cr-palette-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding-top: 6px; border-top: 1px solid var(--orca-border); }',
+      '.cr-swatches { display: flex; gap: 4px; }',
+      '.cr-swatch { width: 18px; height: 18px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; transition: border-color 0.2s, transform 0.15s; }',
+      '.cr-swatch:hover { transform: scale(1.2); }',
+      '.cr-swatch.active { border-color: var(--orca-accent); }',
+
+      '.cr-action-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding-top: 6px; border-top: 1px solid var(--orca-border); }',
+      '.cr-action-row .cr-status { font-size: 10px; color: var(--orca-text-sub); flex: 1; }'
     ].join('\n')
   });
 })();

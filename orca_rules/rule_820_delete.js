@@ -135,6 +135,7 @@
     id: 'rule_820_delete',
     name: '処方箋料削除',
     description: '.820 処方箋料を自動で削除対象に',
+    tooltip: '【動作ルール】\n・K08（診療行為確認）画面で自動実行\n・「.820 処方箋料」かつ「◎」マークがある行を検出\n・検出した行番号を削除剤番号フィールドに自動入力\n・投薬料フィールドをオレンジ色でハイライト\n・手入力分（◎なし）はスキップ',
     storageKey: 'orcaDeleteShohousen',
     triggerScreen: 'K08',
     triggerCondition: '削除剤番号',
@@ -142,24 +143,26 @@
     /** ルール実行 */
     execute: function () {
       if (hasRun) return;
-      var statusEl = document.getElementById('orca-rule-status-rule_820_delete');
       var rows = find820RowNumbers();
-      fillDeleteFields(rows, statusEl);
+      fillDeleteFields(rows);
     },
 
     /** 画面遷移時にリセット */
     onScreenEnter: function () {
       hasRun = false;
-      var statusEl = document.getElementById('orca-rule-status-rule_820_delete');
-      if (statusEl) statusEl.textContent = '監視中...';
     },
 
     /** トグル変更時 */
     onToggle: function (enabled) {
       hasRun = false;
-      var statusEl = document.getElementById('orca-rule-status-rule_820_delete');
-      if (statusEl) statusEl.textContent = enabled ? '監視中...' : '待機中';
       if (enabled) this.execute();
+    },
+
+    /** ▶ ボタン押下時 */
+    forceExecute: function () {
+      hasRun = false;
+      var rows = find820RowNumbers();
+      fillDeleteFields(rows);
     },
 
     /** 追加CSS（ルール固有スタイル） */

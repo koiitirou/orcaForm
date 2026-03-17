@@ -393,3 +393,172 @@ body.orca-theme-dark #orca-helper-sidebar .date-input::-webkit-calendar-picker-i
   font-size: 9px;
   color: var(--orca-text-sub);
 }
+
+/* ========================================
+   Code Replacement Feature
+   ======================================== */
+.code-replace-detail {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--orca-border);
+}
+
+.code-replace-section {
+  margin-bottom: 12px;
+}
+
+.code-replace-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.code-replace-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--orca-text-sub);
+  margin-bottom: 4px;
+}
+
+.code-replace-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.code-replace-fixed-code {
+  font-size: 11px;
+  font-family: 'Consolas', 'Courier New', monospace;
+  color: var(--orca-accent);
+  background: var(--orca-status-bg);
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--orca-border);
+  white-space: nowrap;
+}
+
+.code-replace-input {
+  flex: 1;
+  background: var(--orca-date-input-bg);
+  border: 1px solid var(--orca-date-input-border);
+  border-radius: 6px;
+  color: var(--orca-text-main);
+  padding: 5px 8px;
+  font-size: 12px;
+  font-family: 'Consolas', 'Courier New', monospace;
+  outline: none;
+  transition: border-color 0.2s ease;
+  min-width: 0;
+}
+
+.code-replace-input:focus {
+  border-color: var(--orca-accent);
+}
+
+.code-replace-add-btn {
+  width: 26px;
+  height: 26px;
+  background: var(--orca-btn-bg);
+  border: 1px solid var(--orca-btn-border);
+  border-radius: 6px;
+  color: var(--orca-accent);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.code-replace-add-btn:hover {
+  background: var(--orca-btn-hover-bg);
+  border-color: var(--orca-btn-hover-border);
+}
+
+.code-replace-pair {
+  background: var(--orca-status-bg);
+  border: 1px solid var(--orca-border);
+  border-radius: 8px;
+  padding: 8px;
+  margin-bottom: 6px;
+}
+
+.code-replace-pair-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.code-replace-name-input {
+  flex: 1;
+  background: var(--orca-date-input-bg);
+  border: 1px solid var(--orca-date-input-border);
+  border-radius: 4px;
+  color: var(--orca-text-main);
+  padding: 3px 6px;
+  font-size: 11px;
+  font-family: 'Segoe UI', 'Meiryo', sans-serif;
+  outline: none;
+  min-width: 0;
+}
+
+.code-replace-name-input:focus {
+  border-color: var(--orca-accent);
+}
+
+.code-replace-delete-btn {
+  width: 22px;
+  height: 22px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--orca-close-color);
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.code-replace-delete-btn:hover {
+  background: var(--orca-close-hover-bg);
+  border-color: var(--orca-close-hover-color);
+  color: var(--orca-close-hover-color);
+}
+
+.code-replace-codes {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.code-replace-arrow {
+  font-size: 12px;
+  color: var(--orca-text-sub);
+  flex-shrink: 0;
+}
+
+.code-replace-pair-name-label {
+  font-size: 11px;
+  color: var(--orca-text-main);
+  padding: 2px 0;
+}
+
+/* Row highlight for replaced codes (applied on WebORCA K02 table) */
+.orca-code-replaced {
+  background-color: #fff3cd !important;
+  border-bottom: 2px solid #f59e0b !important;
+  transition: background-color 0.3s ease;
+}
+
+body.orca-theme-dark .orca-code-replaced {
+  background-color: rgba(245, 158, 11, 0.15) !important;
+  border-bottom-color: rgba(245, 158, 11, 0.5) !important;
+}

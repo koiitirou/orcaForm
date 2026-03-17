@@ -120,7 +120,11 @@
       '.toggle-switch input:checked + .toggle-slider { background: var(--orca-accent); }',
       '.toggle-switch input:checked + .toggle-slider:before { transform: translateX(20px); }',
       '',
-      '.status-box { margin-top: 16px; padding: 12px; background: var(--orca-status-bg); border-radius: 8px; font-size: 12px; color: var(--orca-text-sub); min-height: 20px; border: 1px solid var(--orca-border); text-align: center; }'
+      '.status-box { margin-top: 16px; padding: 12px; background: var(--orca-status-bg); border-radius: 8px; font-size: 12px; color: var(--orca-text-sub); min-height: 20px; border: 1px solid var(--orca-border); text-align: center; }',
+      '',
+      '.setting-controls { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }',
+      '.cr-play-btn { width: 28px; height: 28px; background: var(--orca-accent); color: #fff; border: none; border-radius: 50%; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: opacity 0.2s; flex-shrink: 0; }',
+      '.cr-play-btn:hover { opacity: 0.8; }'
     ];
     return lines.join('\n');
   }
@@ -149,29 +153,46 @@
   // ========================================
   var sidebar, floatBtn;
 
-  /** ルールカードのHTMLを生成 */
+  /** ルールカードのHTMLを生成 (customUI ルールは除外) */
   function buildRuleCardsHTML() {
     var rules = window.OrcaRules || [];
     var html = '';
     for (var i = 0; i < rules.length; i++) {
       var r = rules[i];
+      if (r.customUI) continue; // カスタムUIはルール側で生成
+      var tooltipText = r.tooltip || r.description;
+      var execBtn = r.forceExecute ? '<button class="cr-play-btn" id="orca-rule-exec-' + r.id + '" title="実行">▶</button>' : '';
       html += [
-        '<div class="setting-card">',
+        '<div class="setting-card" title="' + tooltipText.replace(/"/g, '&quot;') + '">',
         '  <div class="setting-row">',
         '    <div>',
         '      <div class="setting-label">' + r.name + '</div>',
         '      <div class="setting-desc">' + r.description + '</div>',
         '    </div>',
+        '    <div class="setting-controls">',
+        execBtn,
         '    <label class="toggle-switch">',
         '      <input type="checkbox" id="orca-rule-toggle-' + r.id + '">',
         '      <span class="toggle-slider"></span>',
         '    </label>',
+        '    </div>',
         '  </div>',
-        '  <div class="status-box" id="orca-rule-status-' + r.id + '">待機中</div>',
         '</div>'
       ].join('\n');
     }
     return html;
+  }
+
+  /** customUI ルールのUIを構築 */
+  function buildCustomRuleUIs() {
+    var rules = window.OrcaRules || [];
+    var contentEl = sidebar ? sidebar.querySelector('.sidebar-content') : null;
+    if (!contentEl) return;
+    for (var i = 0; i < rules.length; i++) {
+      if (rules[i].customUI && rules[i].buildUI) {
+        rules[i].buildUI(contentEl);
+      }
+    }
   }
 
   function createUI() {
@@ -262,18 +283,21 @@
 
         toggle.checked = ruleStates[rule.id] || false;
 
-        // ステータス初期表示
-        var statusEl = document.getElementById('orca-rule-status-' + rule.id);
-        if (statusEl) statusEl.textContent = toggle.checked ? '監視中...' : '待機中';
-
         toggle.addEventListener('change', function () {
           ruleStates[rule.id] = toggle.checked;
           var obj = {};
           obj[rule.storageKey] = toggle.checked;
           chrome.storage.local.set(obj);
-
           if (rule.onToggle) rule.onToggle(toggle.checked);
         });
+
+        // ▶ ボタン
+        var execBtn = document.getElementById('orca-rule-exec-' + rule.id);
+        if (execBtn && rule.forceExecute) {
+          execBtn.addEventListener('click', function () {
+            rule.forceExecute();
+          });
+        }
       })(rules[i]);
     }
   }
@@ -286,6 +310,12 @@
     var rules = window.OrcaRules || [];
     var timers = {};
 
+    /** ルールが有効かどうか (customUI対応) */
+    function isRuleActive(rule) {
+      if (rule.customUI && rule.isActive) return rule.isActive();
+      return ruleStates[rule.id] || false;
+    }
+
     var observer = new MutationObserver(function () {
       var currentScreenId = window.OrcaHelpers.getScreenId();
 
@@ -293,7 +323,7 @@
       if (currentScreenId && currentScreenId !== lastScreenId) {
         lastScreenId = currentScreenId;
         for (var i = 0; i < rules.length; i++) {
-          if (rules[i].triggerScreen === currentScreenId && ruleStates[rules[i].id]) {
+          if (rules[i].triggerScreen === currentScreenId && isRuleActive(rules[i])) {
             if (rules[i].onScreenEnter) rules[i].onScreenEnter();
           }
         }
@@ -302,7 +332,7 @@
       // ルール実行チェック
       for (var j = 0; j < rules.length; j++) {
         (function (rule) {
-          if (!ruleStates[rule.id]) return;
+          if (!isRuleActive(rule)) return;
           if (rule.triggerCondition && document.body.innerText.indexOf(rule.triggerCondition) === -1) return;
 
           clearTimeout(timers[rule.id]);
@@ -312,7 +342,7 @@
         })(rules[j]);
       }
     });
-    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+    observer.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true });
   }
 
   // ========================================
@@ -330,6 +360,7 @@
       if (oldSidebar) oldSidebar.remove();
 
       createUI();
+      buildCustomRuleUIs();
       bindRuleToggles();
 
       chrome.storage.local.get([SIDEBAR_OPEN_KEY], function (result) {
@@ -361,6 +392,7 @@
   function init() {
     injectStyles();
     createUI();
+    buildCustomRuleUIs();
 
     var themeToggle = document.getElementById('orca-theme-toggle');
 

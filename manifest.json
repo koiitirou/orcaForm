@@ -52,6 +52,7 @@
       "js": [
         "orca_helpers.js",
         "orca_rules/rule_820_delete.js",
+        "orca_rules/rule_code_replace.js",
         "orca_content.js"
       ],
       "run_at": "document_idle"

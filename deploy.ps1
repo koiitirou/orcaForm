@@ -23,7 +23,7 @@ $PEM_FILE = Join-Path $EXTENSION_DIR "orca-helper.pem"
 $CRX_FILE = Join-Path $EXTENSION_DIR "orca-helper.crx"
 $UPDATE_XML = Join-Path $EXTENSION_DIR "update.xml"
 $GCS_BUCKET = "gs://orca-helper-extension"
-$EXTENSION_ID = "lhpmndgpjjjiobkffbdgidcjnjkmiigoi"
+$EXTENSION_ID = "lhpmndgpjjiobkffbdgidcjnjkmiigoi"
 
 # --- Get version ---
 $manifest = Get-Content (Join-Path $EXTENSION_DIR "manifest.json") -Raw | ConvertFrom-Json

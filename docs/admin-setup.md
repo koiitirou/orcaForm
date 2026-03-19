@@ -10,7 +10,7 @@
 | 項目 | 値 |
 |------|-----|
 | 拡張機能名 | ORCA Helper |
-| Extension ID | `lhpmndgpjjjiobkffbdgidcjnjkmiigoi` |
+| Extension ID | `lhpmndgpjjiobkffbdgidcjnjkmiigoi` |
 | Update URL | `https://storage.googleapis.com/orca-helper-extension/update.xml` |
 
 ## 強制インストール設定手順
@@ -33,7 +33,7 @@
 1. 右下の **＋** ボタン（黄色い丸いボタン）をクリック
 2. **「Chrome アプリまたは拡張機能を URL で指定」** を選択
 3. 以下を入力：
-   - **拡張機能 ID**: `lhpmndgpjjjiobkffbdgidcjnjkmiigoi`
+   - **拡張機能 ID**: `lhpmndgpjjiobkffbdgidcjnjkmiigoi`
    - **更新 URL**: `https://storage.googleapis.com/orca-helper-extension/update.xml`
 4. **保存** をクリック
 

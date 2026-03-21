@@ -125,7 +125,7 @@
   window.OrcaRules.push({
     id: 'rule_820_delete',
     name: 'K08ルール',
-    description: '.820 処方箋料を自動で削除対象に',
+    description: '.820 処方箋料を自動で削除',
     tooltip: '【動作ルール】\n・K08（診療行為確認）画面で自動実行\n・「.820 処方箋料」かつ「◎」マークがある行を検出\n・検出した行番号を削除剤番号フィールドに自動入力\n・投薬料フィールドをオレンジ色でハイライト\n・手入力分（◎なし）はスキップ',
     storageKey: 'orcaDeleteShohousen',
     triggerScreen: 'K08',

@@ -49,16 +49,19 @@
     return ruleStates[rule.id] || false;
   }
 
-  /** MutationObserver で画面遷移検知 & ルール自動実行 */
+  /** title-bar テキスト監視で画面遷移を検知 */
   function startObserver() {
     var lastScreenId = '';
     var rules = window.OrcaRules || [];
-    var timers = {};
 
-    var observer = new MutationObserver(function () {
-      var currentScreenId = window.OrcaHelpers.getScreenId();
+    function checkScreenTransition() {
+      var titleBar = document.querySelector('.title-bar');
+      if (!titleBar) return;
 
-      // 画面遷移検知
+      var text = titleBar.textContent || '';
+      var match = text.match(/\(([A-Z]\d+)\)/);
+      var currentScreenId = match ? match[1] : '';
+
       if (currentScreenId && currentScreenId !== lastScreenId) {
         lastScreenId = currentScreenId;
         for (var i = 0; i < rules.length; i++) {
@@ -67,20 +70,25 @@
           }
         }
       }
+    }
 
-      // ルール実行チェック
-      for (var j = 0; j < rules.length; j++) {
-        (function (rule) {
-          if (!isRuleActive(rule)) return;
-          if (rule.triggerCondition && document.body.innerText.indexOf(rule.triggerCondition) === -1) return;
-          clearTimeout(timers[rule.id]);
-          timers[rule.id] = setTimeout(function () {
-            rule.execute();
-          }, 500);
-        })(rules[j]);
+    // title-bar 要素を取得してObserverを接続
+    function connectTitleObserver() {
+      var titleBar = document.querySelector('.title-bar');
+      if (!titleBar) {
+        // 要素がまだ無い場合は少し待ってリトライ
+        setTimeout(connectTitleObserver, 500);
+        return;
       }
-    });
-    observer.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true });
+
+      var observer = new MutationObserver(checkScreenTransition);
+      observer.observe(titleBar, { childList: true, characterData: true, subtree: true });
+
+      // 初回チェック
+      checkScreenTransition();
+    }
+
+    connectTitleObserver();
   }
 
   // 公開API

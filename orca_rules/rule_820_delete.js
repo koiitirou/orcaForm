@@ -14,58 +14,26 @@
   // ========================================
   function find820RowNumbers() {
     var rows = [];
+    var table = document.getElementById('K08.fixed1.scrolledwindow1.MEILIST');
+    if (!table) return rows;
 
-    var searchRoot = window.OrcaHelpers.getVisibleScreen() || document;
-    var allCells = searchRoot.querySelectorAll('td');
+    var trs = table.querySelectorAll('tbody tr');
+    for (var i = 0; i < trs.length; i++) {
+      var tds = trs[i].querySelectorAll('td');
+      if (tds.length < 3) continue;
 
-    for (var i = 0; i < allCells.length; i++) {
-      var el = allCells[i];
-      var text = el.textContent || '';
-      if (text.indexOf('.820') !== -1 && text.indexOf('処方箋料') !== -1) {
-        var row = el.closest('tr');
-        if (row) {
-          var tds = row.querySelectorAll('td');
-          if (tds.length >= 3) {
-            var numCell = tds[0];
-            var markCell = tds[1];
+      // 3列目（診療区分）に .820 処方箋料 があるか
+      var categoryText = tds[2].textContent || '';
+      if (categoryText.indexOf('.820') === -1 || categoryText.indexOf('処方箋料') === -1) continue;
 
-            // "◎" がない場合はスキップ（手入力分）
-            if (markCell.textContent.indexOf('◎') === -1) {
-              continue;
-            }
+      // 2列目（削除）に ◎ があるか（手入力分はスキップ）
+      var markText = tds[1].textContent || '';
+      if (markText.indexOf('◎') === -1) continue;
 
-            var num = parseInt(numCell.textContent.trim(), 10);
-            if (!isNaN(num) && rows.indexOf(num) === -1) {
-              rows.push(num);
-            }
-          } else if (tds.length > 0) {
-            var firstCell = tds[0];
-            var num2 = parseInt(firstCell.textContent.trim(), 10);
-            if (!isNaN(num2) && rows.indexOf(num2) === -1) {
-              rows.push(num2);
-            }
-          }
-        }
-      }
-    }
-
-    // フォールバック: テキスト全体から検索
-    if (rows.length === 0) {
-      var bodyText = document.body.innerText || '';
-      var lines = bodyText.split('\n');
-      for (var j = 0; j < lines.length; j++) {
-        var line = lines[j];
-        if (line.indexOf('.820') !== -1 && line.indexOf('処方箋料') !== -1) {
-          if (line.indexOf('◎') === -1) continue;
-
-          var match = line.match(/^\s*(\d+)/);
-          if (match) {
-            var rowNum = parseInt(match[1], 10);
-            if (!isNaN(rowNum) && rows.indexOf(rowNum) === -1) {
-              rows.push(rowNum);
-            }
-          }
-        }
+      // 1列目（番号）から行番号を取得
+      var num = parseInt(tds[0].textContent.trim(), 10);
+      if (!isNaN(num) && rows.indexOf(num) === -1) {
+        rows.push(num);
       }
     }
 
@@ -127,18 +95,42 @@
     }
   }
 
+  var k08Observer = null;
+
+  /** K08画面用のMutationObserverを接続 */
+  function startK08Observer() {
+    if (k08Observer) { k08Observer.disconnect(); k08Observer = null; }
+    var screen = window.OrcaHelpers.getVisibleScreen();
+    if (!screen) return;
+
+    var tryExecute = function () {
+      if (hasRun) return;
+      if (document.body.innerText.indexOf('削除剤番号') === -1) return;
+      var rows = find820RowNumbers();
+      fillDeleteFields(rows);
+      if (hasRun && k08Observer) { k08Observer.disconnect(); k08Observer = null; }
+    };
+
+    k08Observer = new MutationObserver(tryExecute);
+    k08Observer.observe(screen, { childList: true, subtree: true, characterData: true });
+
+    // 画面が既に読み込み済みの場合に即チェック
+    setTimeout(tryExecute, 300);
+  }
+
   // ========================================
   // ルール登録
   // ========================================
   window.OrcaRules = window.OrcaRules || [];
   window.OrcaRules.push({
     id: 'rule_820_delete',
-    name: '処方箋料削除',
+    name: 'K08ルール',
     description: '.820 処方箋料を自動で削除対象に',
     tooltip: '【動作ルール】\n・K08（診療行為確認）画面で自動実行\n・「.820 処方箋料」かつ「◎」マークがある行を検出\n・検出した行番号を削除剤番号フィールドに自動入力\n・投薬料フィールドをオレンジ色でハイライト\n・手入力分（◎なし）はスキップ',
     storageKey: 'orcaDeleteShohousen',
     triggerScreen: 'K08',
     triggerCondition: '削除剤番号',
+    skipMutationExecute: true,
 
     /** ルール実行 */
     execute: function () {
@@ -147,9 +139,10 @@
       fillDeleteFields(rows);
     },
 
-    /** 画面遷移時にリセット */
+    /** 画面遷移時にリセット＆独自Observer起動 */
     onScreenEnter: function () {
       hasRun = false;
+      startK08Observer();
     },
 
     /** トグル変更時 */

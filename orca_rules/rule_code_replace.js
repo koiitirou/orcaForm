@@ -22,6 +22,7 @@
   };
 
   var PALETTE = [
+    { color: 'none', dark: 'none', label: 'なし' },
     { color: '#ffe0e6', dark: 'rgba(244,114,182,0.15)', label: 'ピンク' },
     { color: '#fff3cd', dark: 'rgba(245,158,11,0.15)', label: 'イエロー' },
     { color: '#d1fae5', dark: 'rgba(52,211,153,0.15)', label: 'グリーン' },
@@ -67,6 +68,10 @@
     var styleId = 'orca-highlight-color';
     var el = document.getElementById(styleId);
     if (!el) { el = document.createElement('style'); el.id = styleId; document.head.appendChild(el); }
+    if (highlightColor === 'none') {
+      el.textContent = '';
+      return;
+    }
     var entry = PALETTE.find(function (p) { return p.color === highlightColor; });
     var dark = entry ? entry.dark : 'rgba(244,114,182,0.15)';
     el.textContent = '.orca-code-replaced { background-color: ' + highlightColor + ' !important; }\n' +
@@ -92,11 +97,41 @@
     }));
   }
 
-  function highlightRow(input) {
-    var tr = input.closest('tr');
-    if (tr) {
+  /** 置換先コードがある行をハイライト（置換とは独立して常時更新） */
+  function refreshHighlights() {
+    if (highlightColor === 'none') { clearHighlights(); return; }
+
+    var inputs = getCodeInputs();
+    for (var j = 0; j < inputs.length; j++) {
+      var input = inputs[j];
+      var val = input.value.trim();
+      var tr = input.closest('tr');
+      if (!tr) continue;
+
+      var shouldHighlight = false;
+      if (val) {
+        // 施医総管: 842100036 + ninzuTo の完全パターンマッチ
+        if (ninzuOn && ninzuTo && val.indexOf('842100036') !== -1) {
+          var ninzuPattern = new RegExp('842100036\\s+' + escRegex(ninzuTo) + '\\b');
+          if (ninzuPattern.test(val)) shouldHighlight = true;
+        }
+
+        // 自由置換: 入力値全体が to と完全一致
+        if (!shouldHighlight) {
+          for (var k = 0; k < freePairs.length; k++) {
+            if (freePairs[k].enabled && freePairs[k].to && val === freePairs[k].to) {
+              shouldHighlight = true;
+              break;
+            }
+          }
+        }
+      }
+
       var tds = tr.querySelectorAll('td');
-      for (var k = 0; k < tds.length; k++) tds[k].classList.add('orca-code-replaced');
+      for (var t = 0; t < tds.length; t++) {
+        if (shouldHighlight) tds[t].classList.add('orca-code-replaced');
+        else tds[t].classList.remove('orca-code-replaced');
+      }
     }
   }
 
@@ -110,12 +145,10 @@
   }
 
   // ========================================
-  // 置換実行（従来の直接実行方式）
+  // 置換実行（1回1フィールドの順次実行方式）
   // ========================================
   function executeReplace() {
     var inputs = getCodeInputs();
-    var replacedCount = 0;
-    var matchCount = 0;
 
     for (var i = 0; i < inputs.length; i++) {
       var input = inputs[i];
@@ -132,11 +165,12 @@
         }
         var m = val.match(pattern);
         if (m) {
-          matchCount++;
-          highlightRow(input);
           if (m[2] !== ninzuTo) {
             setFieldValue(input, val.replace(pattern, '$1' + ninzuTo));
-            replacedCount++;
+            updateStatus('✅ 置換中...');
+            lastSnapshot = getCodeSnapshot();
+            pendingRecheck = true;
+            return; // 1つ置換したら終了。サーバー応答後にMutationObserverが次を処理
           }
         }
       }
@@ -150,27 +184,26 @@
           rx = pair.regex ? new RegExp(pair.from) : new RegExp(escRegex(pair.from));
         } catch (e) { continue; }
         if (rx.test(val)) {
-          matchCount++;
-          highlightRow(input);
           var rep = val.replace(rx, pair.to);
           if (rep !== val) {
             setFieldValue(input, rep);
-            replacedCount++;
+            updateStatus('✅ 置換中...');
+            lastSnapshot = getCodeSnapshot();
+            pendingRecheck = true;
+            return; // 1つ置換したら終了
           }
         }
       }
     }
 
+    // ここに来た = 全フィールドチェック済み、置換対象なし
+    updateStatus('');
+    lastSnapshot = getCodeSnapshot();
+  }
+
+  function updateStatus(text) {
     var s = document.getElementById('orca-replace-status');
-    if (s) {
-      if (replacedCount > 0) {
-        s.textContent = '✅ ' + replacedCount + '件置換';
-      } else if (matchCount > 0) {
-        s.textContent = '🔍 ' + matchCount + '件マッチ';
-      } else {
-        s.textContent = '';
-      }
-    }
+    if (s) s.textContent = text;
   }
 
   // ========================================
@@ -197,7 +230,7 @@
     headerRow.className = 'setting-row';
     headerRow.innerHTML = [
       '<div>',
-      '  <div class="setting-label">コード置換</div>',
+      '  <div class="setting-label">K02ルール</div>',
       '  <div class="setting-desc">入力コードを自動置換</div>',
       '</div>',
       '<label class="toggle-switch">',
@@ -217,14 +250,14 @@
     ninzuBlock.className = 'cr-ninzu-block';
     ninzuBlock.innerHTML =
       '<div class="cr-ninzu-header">' +
-        miniToggle('cr-ninzu-toggle', ninzuOn) +
-        '<span class="cr-rule-label">施医総管</span>' +
-        '<span class="cr-fixed-code">842100036</span>' +
+      miniToggle('cr-ninzu-toggle', ninzuOn) +
+      '<span class="cr-rule-label">施医総管</span>' +
+      '<span class="cr-fixed-code">842100036</span>' +
       '</div>' +
       '<div class="cr-ninzu-inputs">' +
-        '<input type="text" id="cr-ninzu-from" class="cr-num-input" placeholder="元" title="元の人数（空欄＝全てマッチ）" maxlength="3" value="' + esc(ninzuFrom) + '">' +
-        '<span class="cr-arrow">→</span>' +
-        '<input type="text" id="cr-ninzu-to" class="cr-num-input" placeholder="先" maxlength="3" value="' + esc(ninzuTo) + '">' +
+      '<input type="text" id="cr-ninzu-from" class="cr-num-input" placeholder="元" title="元の人数（空欄＝全てマッチ）" maxlength="3" value="' + esc(ninzuFrom) + '">' +
+      '<span class="cr-arrow">→</span>' +
+      '<input type="text" id="cr-ninzu-to" class="cr-num-input" placeholder="先" maxlength="3" value="' + esc(ninzuTo) + '">' +
       '</div>';
     detail.appendChild(ninzuBlock);
 
@@ -249,7 +282,15 @@
     for (var p = 0; p < PALETTE.length; p++) {
       var sw = document.createElement('button');
       sw.className = 'cr-swatch' + (PALETTE[p].color === highlightColor ? ' active' : '');
-      sw.style.background = PALETTE[p].color;
+      if (PALETTE[p].color === 'none') {
+        sw.style.background = '#ccc';
+        sw.textContent = '∅';
+        sw.style.fontSize = '10px';
+        sw.style.lineHeight = '14px';
+        sw.style.color = '#666';
+      } else {
+        sw.style.background = PALETTE[p].color;
+      }
       sw.title = PALETTE[p].label;
       sw.dataset.color = PALETTE[p].color;
       swatches.appendChild(sw);
@@ -269,8 +310,8 @@
       var obj = {};
       obj[STORAGE.enabled] = isEnabled;
       chrome.storage.local.set(obj);
-      if (isEnabled) { startPolling(); executeReplace(); }
-      else { stopPolling(); clearHighlights(); }
+      if (isEnabled) { startWatching(); executeReplace(); }
+      else { stopWatching(); clearHighlights(); }
     });
 
     document.getElementById('cr-ninzu-toggle').addEventListener('change', function () {
@@ -298,6 +339,7 @@
         obj[STORAGE.highlightColor] = highlightColor;
         chrome.storage.local.set(obj);
         applyHighlightColor();
+        refreshHighlights();
         var all = document.querySelectorAll('.cr-swatch');
         for (var k = 0; k < all.length; k++) all[k].classList.remove('active');
         this.classList.add('active');
@@ -360,28 +402,69 @@
   }
 
   // ========================================
-  // ポーリング
+  // イベント駆動監視（ポーリング廃止）
   // ========================================
-  var lastVals = {};
-  var pollTimer = null;
+  var lastSnapshot = '';
+  var watchDebounce = null;
+  var codeObserver = null;
+  var isWatching = false;
+  var pendingRecheck = false;
 
-  function startPolling() {
-    if (pollTimer) return;
-    pollTimer = setInterval(function () {
-      if (!isEnabled) return;
-      var inputs = getCodeInputs();
-      var changed = false;
-      for (var i = 0; i < inputs.length; i++) {
-        var id = inputs[i].id, v = inputs[i].value;
-        if (lastVals[id] !== v) { lastVals[id] = v; changed = true; }
-      }
-      if (changed) executeReplace();
-    }, 1500);
+  /** 入力コード列のスナップショットを取得 */
+  function getCodeSnapshot() {
+    var inputs = getCodeInputs();
+    var vals = [];
+    for (var i = 0; i < inputs.length; i++) {
+      vals.push(inputs[i].value);
+    }
+    return vals.join('|');
   }
 
-  function stopPolling() {
-    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
-    lastVals = {};
+  /** スナップショット比較 → 変化時 or 再チェック待ち時に executeReplace */
+  function checkAndExecute() {
+    if (!isEnabled) return;
+    refreshHighlights();
+    var snapshot = getCodeSnapshot();
+    if (snapshot !== lastSnapshot || pendingRecheck) {
+      lastSnapshot = snapshot;
+      pendingRecheck = false;
+      executeReplace();
+    }
+  }
+
+  /** デバウンス付きチェック */
+  function debouncedCheck(delay) {
+    clearTimeout(watchDebounce);
+    watchDebounce = setTimeout(checkAndExecute, delay);
+  }
+
+  /** PANDATABLE1 限定 MutationObserver で監視 */
+  function startWatching() {
+    if (isWatching) return;
+    isWatching = true;
+    connectTableObserver();
+  }
+
+  /** PANDATABLE1用MutationObserverを接続 */
+  function connectTableObserver() {
+    if (codeObserver) { codeObserver.disconnect(); codeObserver = null; }
+    var scrolledWin = document.getElementById('K02.fixed2.scrolledwindow3');
+    if (scrolledWin) {
+      codeObserver = new MutationObserver(function () {
+        if (!isEnabled) return;
+        debouncedCheck(500);
+      });
+      codeObserver.observe(scrolledWin, {
+        childList: true, subtree: true, characterData: true
+      });
+    }
+  }
+
+  /** 監視を停止 */
+  function stopWatching() {
+    clearTimeout(watchDebounce);
+    if (codeObserver) { codeObserver.disconnect(); codeObserver = null; }
+    lastSnapshot = '';
   }
 
   // ========================================
@@ -390,31 +473,34 @@
   window.OrcaRules = window.OrcaRules || [];
   window.OrcaRules.push({
     id: 'rule_code_replace',
-    name: 'コード置換',
+    name: 'K02ルール',
     description: '入力コードを自動置換',
     storageKey: STORAGE.enabled,
     triggerScreen: 'K02',
     customUI: true,
+    skipMutationExecute: true,
 
     isActive: function () { return isEnabled; },
 
     buildUI: function (container) {
       loadSettings(function () {
         buildUI(container);
-        if (isEnabled) startPolling();
+        if (isEnabled) startWatching();
       });
     },
     execute: function () {
       if (isEnabled) executeReplace();
     },
     onScreenEnter: function () {
-      clearHighlights();
-      lastVals = {};
+      lastSnapshot = '';
+      if (isEnabled) {
+        setTimeout(function () { connectTableObserver(); }, 200);
+      }
     },
     onToggle: function (enabled) {
       isEnabled = enabled;
-      if (enabled) { startPolling(); executeReplace(); }
-      else { stopPolling(); clearHighlights(); }
+      if (enabled) { startWatching(); executeReplace(); }
+      else { stopWatching(); clearHighlights(); }
     },
 
     css: [

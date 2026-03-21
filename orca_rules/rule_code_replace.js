@@ -251,7 +251,7 @@
     ninzuBlock.innerHTML =
       '<div class="cr-ninzu-header">' +
       miniToggle('cr-ninzu-toggle', ninzuOn) +
-      '<span class="cr-rule-label">単一建物人数(施医総管)</span>' +
+      '<span class="cr-rule-label">単一建物人数</span>' +
       '<span class="cr-fixed-code">842100036</span>' +
       '</div>' +
       '<div class="cr-ninzu-inputs">' +

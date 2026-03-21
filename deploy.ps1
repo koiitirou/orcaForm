@@ -17,13 +17,13 @@ param(
 $ErrorActionPreference = "Stop"
 
 # --- Config ---
-$GCLOUD = "C:\Users\236PC\AppData\Local\Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd"
+$GCLOUD = "C:\Users\140-PC\AppData\Local\Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd"
 $EXTENSION_DIR = $PSScriptRoot
 $PEM_FILE = Join-Path $EXTENSION_DIR "orca-helper.pem"
 $CRX_FILE = Join-Path $EXTENSION_DIR "orca-helper.crx"
 $UPDATE_XML = Join-Path $EXTENSION_DIR "update.xml"
 $GCS_BUCKET = "gs://orca-helper-extension"
-$EXTENSION_ID = "lhpmndgpjjiobkffbdgidcjnjkmiigoi"
+$EXTENSION_ID = "loodelplkdlepfcpebocphgclobijlhk"
 
 # --- Get version ---
 $manifest = Get-Content (Join-Path $EXTENSION_DIR "manifest.json") -Raw | ConvertFrom-Json

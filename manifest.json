@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "ORCA Helper",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "description": "WebORCAの入力を支援する機能",
   "update_url": "https://storage.googleapis.com/orca-helper-extension/update.xml",
   "permissions": [
@@ -59,6 +59,15 @@
         "orca_theme.js",
         "orca_rule_engine.js",
         "orca_content.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://c1.secom-owel.jp/*"
+      ],
+      "js": [
+        "owel_content.js"
       ],
       "run_at": "document_idle"
     }

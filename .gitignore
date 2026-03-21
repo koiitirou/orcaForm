@@ -3,6 +3,9 @@
 *.key
 *.p12
 *.pfx
+
+# Packaged extension
+*.crx
 *.der
 
 # Certificate files (keep if needed, but review before committing)

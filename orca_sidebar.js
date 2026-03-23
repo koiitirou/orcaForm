@@ -76,10 +76,9 @@
       '    </div>',
       '  </div>',
       buildRuleCardsHTML(),
-      '  <div class="setting-card" style="margin-top:12px;">',
-      '    <div class="setting-row" style="justify-content:center;">',
-      '      <button id="orca-haita-btn" style="width:100%;padding:10px 16px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;letter-spacing:0.5px;transition:all 0.2s;">🔒 排他制御画面を開く (W98)</button>',
-      '    </div>',
+      '  <div style="margin-top:auto;padding:12px 16px;border-top:1px solid var(--orca-border,#e2e8f0);display:flex;gap:12px;justify-content:center;">',
+      '    <a href="#" id="orca-link-m01" style="font-size:11px;color:var(--orca-text-sub,#94a3b8);text-decoration:none;opacity:0.7;transition:opacity 0.2s;" title="メインメニュー">▶ M01</a>',
+      '    <a href="#" id="orca-link-w98" style="font-size:11px;color:var(--orca-text-sub,#94a3b8);text-decoration:none;opacity:0.7;transition:opacity 0.2s;" title="排他制御画面">🔒 W98</a>',
       '  </div>',
       '</div>'
     ].join('\n');
@@ -88,27 +87,26 @@
     floatBtn.addEventListener('click', openSidebar);
     document.getElementById('orca-sidebar-close').addEventListener('click', closeSidebar);
 
-    // 排他制御ボタン
-    var haitaBtn = document.getElementById('orca-haita-btn');
-    if (haitaBtn) {
-      haitaBtn.addEventListener('mouseenter', function () {
-        haitaBtn.style.transform = 'translateY(-1px)';
-        haitaBtn.style.boxShadow = '0 4px 12px rgba(245,158,11,0.4)';
-      });
-      haitaBtn.addEventListener('mouseleave', function () {
-        haitaBtn.style.transform = '';
-        haitaBtn.style.boxShadow = '';
-      });
-      haitaBtn.addEventListener('click', function () {
-        // 現在のページURLからuser/passを引き継ぐ
-        var params = new URLSearchParams(window.location.search);
-        var user = params.get('user') || 'secom';
-        var pass = params.get('pass') || 'secom';
-        var base = window.location.origin;
-        var url = base + '/client.html?user=' + encodeURIComponent(user) + '&pass=' + encodeURIComponent(pass) + '&screen=W98';
-        window.open(url, '_blank');
-      });
+    // ORCA画面リンク共通処理
+    function openOrcaScreen(screen) {
+      var params = new URLSearchParams(window.location.search);
+      var user = params.get('user') || 'secom';
+      var pass = params.get('pass') || 'secom';
+      var base = window.location.origin;
+      window.open(base + '/client.html?user=' + encodeURIComponent(user) + '&pass=' + encodeURIComponent(pass) + '&screen=' + screen, '_blank');
     }
+
+    ['orca-link-m01', 'orca-link-w98'].forEach(function (id) {
+      var link = document.getElementById(id);
+      if (link) {
+        link.addEventListener('mouseenter', function () { link.style.opacity = '1'; });
+        link.addEventListener('mouseleave', function () { link.style.opacity = '0.7'; });
+        link.addEventListener('click', function (e) {
+          e.preventDefault();
+          openOrcaScreen(id === 'orca-link-m01' ? 'M01' : 'W98');
+        });
+      }
+    });
   }
 
   function openSidebar() {

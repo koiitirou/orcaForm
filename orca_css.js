@@ -58,7 +58,7 @@
       '  --orca-status-bg: rgba(0,0,0,0.25);',
       '}',
       '',
-      'body.orca-helper-active #client-container { width: calc(100vw - ' + SIDEBAR_WIDTH + 'px) !important; overflow: hidden !important; }',
+      'body.orca-helper-active #client-container { width: calc(100vw - ' + SIDEBAR_WIDTH + 'px) !important; overflow: hidden !important; font-size: inherit !important; font-family: inherit !important; }',
       '',
       '#orca-helper-float-btn {',
       '  position: fixed; top: 16px; right: 16px; width: 44px; height: 44px;',

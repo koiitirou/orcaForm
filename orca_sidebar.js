@@ -93,7 +93,7 @@
       var user = params.get('user') || 'secom';
       var pass = params.get('pass') || 'secom';
       var base = window.location.origin;
-      window.open(base + '/client.html?user=' + encodeURIComponent(user) + '&pass=' + encodeURIComponent(pass) + '&screen=' + screen, '_blank');
+      window.open(base + '/client.html?scale_mode=percent&user=' + encodeURIComponent(user) + '&pass=' + encodeURIComponent(pass) + '&screen=' + screen, '_blank');
     }
 
     ['orca-link-m01', 'orca-link-w98'].forEach(function (id) {

@@ -194,13 +194,17 @@
       var patientId = getPatientId(padded);
       if (!patientId) return null;
 
+      // サイドバーで設定されたユーザー/パスワードを取得
+      var orcaUser = document.documentElement.getAttribute('data-orca-user') || 'secom';
+      var orcaPass = document.documentElement.getAttribute('data-orca-pass') || 'secom';
+
       if (typeof vm.IsCloudFlg === 'function' && vm.IsCloudFlg()) {
-        return 'https://weborca.cloud.orcamo.jp/client.html?user=secom&pass=secom&screen=' + screen + '&ptnum=' + patientId;
+        return 'https://weborca.cloud.orcamo.jp/client.html?user=' + encodeURIComponent(orcaUser) + '&pass=' + encodeURIComponent(orcaPass) + '&screen=' + screen + '&ptnum=' + patientId;
       } else if (typeof vm.is_weborca === 'function' && vm.is_weborca()) {
         var link = '';
         if (typeof vm.serverLink === 'function') link += vm.serverLink();
         if (typeof vm.orcaPort === 'function') link += ':' + vm.orcaPort();
-        return 'http://' + link + '/client.html?user=secom&pass=secom&screen=' + screen + '&ptnum=' + patientId;
+        return 'http://' + link + '/client.html?user=' + encodeURIComponent(orcaUser) + '&pass=' + encodeURIComponent(orcaPass) + '&screen=' + screen + '&ptnum=' + patientId;
       }
       alert('WebORCA環境が設定されていません');
       return null;

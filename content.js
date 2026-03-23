@@ -22,7 +22,9 @@
     activeMonthBtn: 'activeMonthBtn',
     injectClass: 'injectClass',
     injectCode1: 'injectCode1',
-    injectCode2: 'injectCode2'
+    injectCode2: 'injectCode2',
+    orcaUser: 'orcaUser',
+    orcaPass: 'orcaPass'
   };
 
   var INJECT_DEFAULTS = {
@@ -239,6 +241,21 @@
       '      </div>',
       '    </div>',
       '',
+      '    <div class="setting-card">',
+      '      <div style="padding:8px 12px;">',
+      '        <div class="setting-label" style="margin-bottom:6px;">ORCA接続ユーザー</div>',
+      '        <div class="setting-desc" style="margin-bottom:8px;">WebORCA画面を開く時のユーザー/パスワード</div>',
+      '        <div style="margin-bottom:6px;">',
+      '          <label style="font-size:11px;color:#94a3b8;display:block;margin-bottom:2px;">ユーザー名</label>',
+      '          <input type="text" id="orca-user" value="secom" style="width:100%;padding:4px 8px;background:#1e293b;color:#e2e8f0;border:1px solid #475569;border-radius:4px;font-size:13px;box-sizing:border-box;">',
+      '        </div>',
+      '        <div>',
+      '          <label style="font-size:11px;color:#94a3b8;display:block;margin-bottom:2px;">パスワード</label>',
+      '          <input type="text" id="orca-pass" value="secom" style="width:100%;padding:4px 8px;background:#1e293b;color:#e2e8f0;border:1px solid #475569;border-radius:4px;font-size:13px;box-sizing:border-box;">',
+      '        </div>',
+      '      </div>',
+      '    </div>',
+      '',
       '    </div>',
       '',
       '  </div>',
@@ -450,7 +467,9 @@
     var codeInputs = [
       { id: 'orca-inject-class', key: STORAGE_KEYS.injectClass, attr: 'data-orca-inject-class' },
       { id: 'orca-inject-code1', key: STORAGE_KEYS.injectCode1, attr: 'data-orca-inject-code1' },
-      { id: 'orca-inject-code2', key: STORAGE_KEYS.injectCode2, attr: 'data-orca-inject-code2' }
+      { id: 'orca-inject-code2', key: STORAGE_KEYS.injectCode2, attr: 'data-orca-inject-code2' },
+      { id: 'orca-user', key: STORAGE_KEYS.orcaUser, attr: 'data-orca-user' },
+      { id: 'orca-pass', key: STORAGE_KEYS.orcaPass, attr: 'data-orca-pass' }
     ];
     codeInputs.forEach(function (ci) {
       var input = document.getElementById(ci.id);
@@ -479,7 +498,7 @@
     chrome.storage.local.get(
       [STORAGE_KEYS.themeDark, STORAGE_KEYS.autoDate, STORAGE_KEYS.statusBlank, STORAGE_KEYS.autoSearch,
        STORAGE_KEYS.accountCheck, STORAGE_KEYS.sidebarOpen, STORAGE_KEYS.savedStartDate, STORAGE_KEYS.savedEndDate,
-       STORAGE_KEYS.injectCode, STORAGE_KEYS.debugMode],
+       STORAGE_KEYS.injectCode, STORAGE_KEYS.debugMode, STORAGE_KEYS.orcaUser, STORAGE_KEYS.orcaPass],
       function (result) {
         var themeDark = result[STORAGE_KEYS.themeDark] || false;
         var autoDate = result[STORAGE_KEYS.autoDate] || false;
@@ -522,9 +541,13 @@
         var iClass = result[STORAGE_KEYS.injectClass] || INJECT_DEFAULTS.injectClass;
         var iCode1 = result[STORAGE_KEYS.injectCode1] || INJECT_DEFAULTS.injectCode1;
         var iCode2 = (result[STORAGE_KEYS.injectCode2] !== undefined) ? result[STORAGE_KEYS.injectCode2] : INJECT_DEFAULTS.injectCode2;
+        var orcaUser = result[STORAGE_KEYS.orcaUser] || 'secom';
+        var orcaPass = result[STORAGE_KEYS.orcaPass] || 'secom';
         document.getElementById('orca-inject-class').value = iClass;
         document.getElementById('orca-inject-code1').value = iCode1;
         document.getElementById('orca-inject-code2').value = iCode2;
+        document.getElementById('orca-user').value = orcaUser;
+        document.getElementById('orca-pass').value = orcaPass;
 
         updateCardStyle('card-autoDate', autoDate);
         updateCardStyle('card-statusBlank', statusBlank);
@@ -537,6 +560,8 @@
         document.documentElement.setAttribute('data-orca-inject-class', iClass);
         document.documentElement.setAttribute('data-orca-inject-code1', iCode1);
         document.documentElement.setAttribute('data-orca-inject-code2', iCode2);
+        document.documentElement.setAttribute('data-orca-user', orcaUser);
+        document.documentElement.setAttribute('data-orca-pass', orcaPass);
         updateDateSectionVisibility(autoDate);
 
         // page_script.js に適用を指示（保存された日付を使用）

@@ -81,6 +81,7 @@
       '    <a href="#" id="orca-link-w98" style="font-size:11px;color:var(--orca-text-sub,#94a3b8);text-decoration:none;opacity:0.7;transition:opacity 0.2s;" title="排他制御画面">🔒 W98</a>',
       '    <a href="http://10.16.160.236:8081/ai.html" target="_blank" id="orca-link-ai" style="font-size:11px;color:var(--orca-text-sub,#94a3b8);text-decoration:none;opacity:0.7;transition:opacity 0.2s;" title="AIチャット">🤖 AI</a>',
       '    <a href="http://10.16.160.236:8081/billing.html" target="_blank" id="orca-link-billing" style="font-size:11px;color:var(--orca-text-sub,#94a3b8);text-decoration:none;opacity:0.7;transition:opacity 0.2s;" title="算定ルール">💰 算定</a>',
+      '    <a href="http://10.16.160.236:8081/karte.html" target="_blank" id="orca-link-karte" style="font-size:11px;color:var(--orca-text-sub,#94a3b8);text-decoration:none;opacity:0.7;transition:opacity 0.2s;" title="カルテPDF取り込み">📄 カルテ</a>',
       '  </div>',
       '</div>'
     ].join('\n');
@@ -98,7 +99,7 @@
       window.open(base + '/client.html?scale_mode=percent&user=' + encodeURIComponent(user) + '&pass=' + encodeURIComponent(pass) + '&screen=' + screen, '_blank');
     }
 
-    ['orca-link-m01', 'orca-link-w98', 'orca-link-ai', 'orca-link-billing'].forEach(function (id) {
+    ['orca-link-m01', 'orca-link-w98', 'orca-link-ai', 'orca-link-billing', 'orca-link-karte'].forEach(function (id) {
       var link = document.getElementById(id);
       if (link) {
         link.addEventListener('mouseenter', function () { link.style.opacity = '1'; });

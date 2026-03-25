@@ -76,9 +76,11 @@
       '    </div>',
       '  </div>',
       buildRuleCardsHTML(),
-      '  <div style="margin-top:auto;padding:12px 16px;border-top:1px solid var(--orca-border,#e2e8f0);display:flex;gap:12px;justify-content:center;">',
+      '  <div style="margin-top:auto;padding:12px 16px;border-top:1px solid var(--orca-border,#e2e8f0);display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">',
       '    <a href="#" id="orca-link-m01" style="font-size:11px;color:var(--orca-text-sub,#94a3b8);text-decoration:none;opacity:0.7;transition:opacity 0.2s;" title="メインメニュー">▶ M01</a>',
       '    <a href="#" id="orca-link-w98" style="font-size:11px;color:var(--orca-text-sub,#94a3b8);text-decoration:none;opacity:0.7;transition:opacity 0.2s;" title="排他制御画面">🔒 W98</a>',
+      '    <a href="http://localhost:8081/ai.html" target="_blank" id="orca-link-ai" style="font-size:11px;color:var(--orca-text-sub,#94a3b8);text-decoration:none;opacity:0.7;transition:opacity 0.2s;" title="AIチャット">🤖 AI</a>',
+      '    <a href="http://localhost:8081/billing.html" target="_blank" id="orca-link-billing" style="font-size:11px;color:var(--orca-text-sub,#94a3b8);text-decoration:none;opacity:0.7;transition:opacity 0.2s;" title="算定ルール">💰 算定</a>',
       '  </div>',
       '</div>'
     ].join('\n');
@@ -96,15 +98,17 @@
       window.open(base + '/client.html?scale_mode=percent&user=' + encodeURIComponent(user) + '&pass=' + encodeURIComponent(pass) + '&screen=' + screen, '_blank');
     }
 
-    ['orca-link-m01', 'orca-link-w98'].forEach(function (id) {
+    ['orca-link-m01', 'orca-link-w98', 'orca-link-ai', 'orca-link-billing'].forEach(function (id) {
       var link = document.getElementById(id);
       if (link) {
         link.addEventListener('mouseenter', function () { link.style.opacity = '1'; });
         link.addEventListener('mouseleave', function () { link.style.opacity = '0.7'; });
-        link.addEventListener('click', function (e) {
-          e.preventDefault();
-          openOrcaScreen(id === 'orca-link-m01' ? 'M01' : 'W98');
-        });
+        if (id === 'orca-link-m01' || id === 'orca-link-w98') {
+          link.addEventListener('click', function (e) {
+            e.preventDefault();
+            openOrcaScreen(id === 'orca-link-m01' ? 'M01' : 'W98');
+          });
+        }
       }
     });
   }

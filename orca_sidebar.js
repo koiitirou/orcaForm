@@ -79,9 +79,9 @@
       '  <div style="margin-top:auto;padding:12px 16px;border-top:1px solid var(--orca-border,#e2e8f0);display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">',
       '    <a href="#" id="orca-link-m01" style="font-size:11px;color:var(--orca-text-sub,#94a3b8);text-decoration:none;opacity:0.7;transition:opacity 0.2s;" title="メインメニュー">▶ M01</a>',
       '    <a href="#" id="orca-link-w98" style="font-size:11px;color:var(--orca-text-sub,#94a3b8);text-decoration:none;opacity:0.7;transition:opacity 0.2s;" title="排他制御画面">🔒 W98</a>',
-      '    <a href="http://10.16.160.236:8081/ai.html" target="_blank" id="orca-link-ai" style="font-size:11px;color:var(--orca-text-sub,#94a3b8);text-decoration:none;opacity:0.7;transition:opacity 0.2s;" title="AIチャット">🤖 AI</a>',
-      '    <a href="http://10.16.160.236:8081/billing.html" target="_blank" id="orca-link-billing" style="font-size:11px;color:var(--orca-text-sub,#94a3b8);text-decoration:none;opacity:0.7;transition:opacity 0.2s;" title="算定ルール">💰 算定</a>',
-      '    <a href="http://10.16.160.236:8081/karte.html" target="_blank" id="orca-link-karte" style="font-size:11px;color:var(--orca-text-sub,#94a3b8);text-decoration:none;opacity:0.7;transition:opacity 0.2s;" title="カルテPDF取り込み">📄 カルテ</a>',
+      '    <a href="http://10.16.160.236:8081/ai.html?ext=true" target="_blank" id="orca-link-ai" style="font-size:11px;color:var(--orca-text-sub,#94a3b8);text-decoration:none;opacity:0.7;transition:opacity 0.2s;" title="AIチャット">🤖 AI</a>',
+      '    <a href="http://10.16.160.236:8081/billing.html?ext=true" target="_blank" id="orca-link-billing" style="font-size:11px;color:var(--orca-text-sub,#94a3b8);text-decoration:none;opacity:0.7;transition:opacity 0.2s;" title="算定ルール">💰 算定</a>',
+      '    <a href="http://10.16.160.236:8081/karte.html?ext=true" target="_blank" id="orca-link-karte" style="font-size:11px;color:var(--orca-text-sub,#94a3b8);text-decoration:none;opacity:0.7;transition:opacity 0.2s;" title="カルテPDF取り込み">📄 カルテ</a>',
       '  </div>',
       '</div>'
     ].join('\n');

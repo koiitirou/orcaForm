@@ -18,11 +18,14 @@
       var r = rules[i];
       if (r.customUI) continue;
       var tooltipText = r.tooltip || r.description;
+      var refreshBtn = r.forceExecute
+        ? '<button class="orca-refresh-btn" id="orca-refresh-' + r.id + '" title="手動で1回実行">🔄</button>'
+        : '';
       html += [
         '<div class="setting-card" title="' + tooltipText.replace(/"/g, '&quot;') + '">',
         '  <div class="setting-row">',
         '    <div>',
-        '      <div class="setting-label">' + r.name + '</div>',
+        '      <div class="setting-label">' + r.name + refreshBtn + '</div>',
         '      <div class="setting-desc">' + r.description + '</div>',
         '    </div>',
         '    <label class="toggle-switch">',

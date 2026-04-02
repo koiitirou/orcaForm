@@ -116,10 +116,10 @@
           if (ninzuPattern.test(val)) shouldHighlight = true;
         }
 
-        // 自由置換: 入力値全体が to と完全一致
+        // 自由置換: 入力値全体が to と完全一致（to が空＝コード消去済みなら元値マッチでハイライト不要）
         if (!shouldHighlight) {
           for (var k = 0; k < freePairs.length; k++) {
-            if (freePairs[k].enabled && freePairs[k].to && val === freePairs[k].to) {
+            if (freePairs[k].enabled && freePairs[k].to !== '' && val === freePairs[k].to) {
               shouldHighlight = true;
               break;
             }
@@ -145,7 +145,7 @@
   }
 
   // ========================================
-  // 置換実行（1回1フィールドの順次実行方式）
+  // 置換実行（1回1フィールドの順次実行方式 — MutationObserver用）
   // ========================================
   function executeReplace() {
     var inputs = getCodeInputs();
@@ -175,16 +175,16 @@
         }
       }
 
-      // 2. 自由置換
+      // 2. 自由置換（to が空文字列 = コード消去）
       for (var j = 0; j < freePairs.length; j++) {
         var pair = freePairs[j];
-        if (!pair.enabled || !pair.from || !pair.to) continue;
+        if (!pair.enabled || !pair.from) continue;
         var rx;
         try {
           rx = pair.regex ? new RegExp(pair.from) : new RegExp(escRegex(pair.from));
         } catch (e) { continue; }
         if (rx.test(val)) {
-          var rep = val.replace(rx, pair.to);
+          var rep = (pair.to === '' && !pair.regex) ? '' : val.replace(rx, pair.to);
           if (rep !== val) {
             setFieldValue(input, rep);
             updateStatus('✅ 置換中...');
@@ -199,6 +199,69 @@
     // ここに来た = 全フィールドチェック済み、置換対象なし
     updateStatus('');
     lastSnapshot = getCodeSnapshot();
+  }
+
+  // ========================================
+  // 全件置換（手動実行用 — ボタン/トグルON）
+  // サーバー応答を待ちつつ、置換対象がなくなるまで繰り返す
+  // ========================================
+  var replaceAllTimer = null;
+
+  function executeReplaceAll() {
+    clearTimeout(replaceAllTimer);
+    var inputs = getCodeInputs();
+
+    for (var i = 0; i < inputs.length; i++) {
+      var input = inputs[i];
+      var val = input.value.trim();
+      if (!val) continue;
+
+      // 1. 施医総管
+      if (ninzuOn && ninzuTo && val.indexOf('842100036') !== -1) {
+        var pattern;
+        if (ninzuFrom) {
+          pattern = new RegExp('(842100036\\s+)(' + escRegex(ninzuFrom) + ')\\b');
+        } else {
+          pattern = new RegExp('(842100036\\s+)(\\d+)');
+        }
+        var m = val.match(pattern);
+        if (m) {
+          if (m[2] !== ninzuTo) {
+            setFieldValue(input, val.replace(pattern, '$1' + ninzuTo));
+            updateStatus('✅ 置換中... (全件)');
+            lastSnapshot = getCodeSnapshot();
+            // 次のフィールドをサーバー応答後に処理
+            replaceAllTimer = setTimeout(executeReplaceAll, 800);
+            return;
+          }
+        }
+      }
+
+      // 2. 自由置換（to が空文字列 = コード消去）
+      for (var j = 0; j < freePairs.length; j++) {
+        var pair = freePairs[j];
+        if (!pair.enabled || !pair.from) continue;
+        var rx;
+        try {
+          rx = pair.regex ? new RegExp(pair.from) : new RegExp(escRegex(pair.from));
+        } catch (e) { continue; }
+        if (rx.test(val)) {
+          var rep = (pair.to === '' && !pair.regex) ? '' : val.replace(rx, pair.to);
+          if (rep !== val) {
+            setFieldValue(input, rep);
+            updateStatus('✅ 置換中... (全件)');
+            lastSnapshot = getCodeSnapshot();
+            replaceAllTimer = setTimeout(executeReplaceAll, 800);
+            return;
+          }
+        }
+      }
+    }
+
+    // 全フィールドチェック済み、置換対象なし
+    updateStatus('✅ 完了');
+    lastSnapshot = getCodeSnapshot();
+    setTimeout(function () { updateStatus(''); }, 2000);
   }
 
   function updateStatus(text) {
@@ -230,7 +293,7 @@
     headerRow.className = 'setting-row';
     headerRow.innerHTML = [
       '<div>',
-      '  <div class="setting-label">K02ルール</div>',
+      '  <div class="setting-label">K02ルール<button class="orca-refresh-btn" id="orca-refresh-code-replace" title="手動で1回実行">🔄</button></div>',
       '  <div class="setting-desc">入力コードを自動置換</div>',
       '</div>',
       '<label class="toggle-switch">',
@@ -310,8 +373,15 @@
       var obj = {};
       obj[STORAGE.enabled] = isEnabled;
       chrome.storage.local.set(obj);
-      if (isEnabled) { startWatching(); executeReplace(); }
+      if (isEnabled) { startWatching(); lastSnapshot = ''; executeReplaceAll(); }
       else { stopWatching(); clearHighlights(); }
+    });
+
+    // リフレッシュボタン
+    document.getElementById('orca-refresh-code-replace').addEventListener('click', function (e) {
+      e.stopPropagation();
+      lastSnapshot = '';
+      executeReplaceAll();
     });
 
     document.getElementById('cr-ninzu-toggle').addEventListener('change', function () {
@@ -452,6 +522,7 @@
     if (scrolledWin) {
       codeObserver = new MutationObserver(function () {
         if (!isEnabled) return;
+        pendingRecheck = true;  // DOM変更検知 → 必ず再チェック
         debouncedCheck(500);
       });
       codeObserver.observe(scrolledWin, {
@@ -499,8 +570,13 @@
     },
     onToggle: function (enabled) {
       isEnabled = enabled;
-      if (enabled) { startWatching(); executeReplace(); }
+      if (enabled) { startWatching(); lastSnapshot = ''; executeReplaceAll(); }
       else { stopWatching(); clearHighlights(); }
+    },
+
+    forceExecute: function () {
+      lastSnapshot = '';
+      executeReplaceAll();
     },
 
     css: [

@@ -39,6 +39,15 @@
           chrome.storage.local.set(obj);
           if (rule.onToggle) rule.onToggle(toggle.checked);
         });
+
+        // リフレッシュボタン
+        var refreshBtn = document.getElementById('orca-refresh-' + rule.id);
+        if (refreshBtn && rule.forceExecute) {
+          refreshBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            rule.forceExecute();
+          });
+        }
       })(rules[i]);
     }
   }

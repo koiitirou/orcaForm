@@ -201,7 +201,7 @@
       '    </div>',
       '    <div id="orca-accordion-body" style="display:none;">',
       '',
-      '    <div class="setting-card" id="card-injectCode">',
+      '    <div class="setting-card" id="card-injectCode" style="display:none;">',
       '      <div class="setting-row">',
       '        <div>',
       '          <div class="setting-label">処方コード付加</div>',
@@ -228,7 +228,7 @@
       '      </div>',
       '    </div>',
       '',
-      '    <div class="setting-card" id="card-debugMode">',
+      '    <div class="setting-card" id="card-debugMode" style="display:none;">',
       '      <div class="setting-row">',
       '        <div>',
       '          <div class="setting-label">デバッグモード</div>',
@@ -247,12 +247,23 @@
       '        <div class="setting-desc" style="margin-bottom:8px;">WebORCA画面を開く時のユーザー/パスワード</div>',
       '        <div style="margin-bottom:6px;">',
       '          <label style="font-size:11px;color:#94a3b8;display:block;margin-bottom:2px;">ユーザー名</label>',
-      '          <input type="text" id="orca-user" value="secom" style="width:100%;padding:4px 8px;background:#1e293b;color:#e2e8f0;border:1px solid #475569;border-radius:4px;font-size:13px;box-sizing:border-box;">',
+      '          <input type="text" id="orca-user" value="orca" style="width:100%;padding:4px 8px;background:#1e293b;color:#e2e8f0;border:1px solid #475569;border-radius:4px;font-size:13px;box-sizing:border-box;">',
       '        </div>',
       '        <div>',
       '          <label style="font-size:11px;color:#94a3b8;display:block;margin-bottom:2px;">パスワード</label>',
-      '          <input type="text" id="orca-pass" value="secom" style="width:100%;padding:4px 8px;background:#1e293b;color:#e2e8f0;border:1px solid #475569;border-radius:4px;font-size:13px;box-sizing:border-box;">',
+      '          <input type="text" id="orca-pass" value="recipt" style="width:100%;padding:4px 8px;background:#1e293b;color:#e2e8f0;border:1px solid #475569;border-radius:4px;font-size:13px;box-sizing:border-box;">',
       '        </div>',
+      '      </div>',
+      '    </div>',
+      '',
+      '    <div class="setting-card">',
+      '      <div style="padding:8px 12px;">',
+      '        <div class="setting-label" style="margin-bottom:6px;">WebORCAショートカット・別ウィンドウ起動セットアップ</div>',
+      '        <div class="setting-desc" style="margin-bottom:4px;">1. WebORCA単体起動用ショートカット（コピーして利用）</div>',
+      '        <textarea readonly style="width:100%;height:35px;padding:4px;background:#0f172a;color:#10b981;border:1px solid #475569;border-radius:4px;font-size:10px;font-family:monospace;resize:none;margin-bottom:8px;">"C:\\Program Files\\Google\\Chrome\\Application\\chrome_proxy.exe" --user-data-dir="C:\\weborca-chrome" https://weborca.cloud.orcamo.jp/?scale_mode=percent</textarea>',
+      '        <div class="setting-desc" style="margin-bottom:4px;">2. Native Host登録コマンド（PowerShellで実行）</div>',
+      '        <textarea readonly style="width:100%;height:50px;padding:4px;background:#0f172a;color:#10b981;border:1px solid #475569;border-radius:4px;font-size:10px;font-family:monospace;resize:none;margin-bottom:6px;">New-Item -Path "HKCU:\\Software\\Google\\Chrome\\NativeMessagingHosts\\com.orca.helper" -Force | Out-Null; Set-ItemProperty -Path "HKCU:\\Software\\Google\\Chrome\\NativeMessagingHosts\\com.orca.helper" -Name "(Default)" -Value "C:\\MyApp\\orcaForm\\native_host\\com.orca.helper.json"</textarea>',
+      '        <button id="orca-copy-reg-cmd" type="button" style="width:100%;padding:4px;background:#3b82f6;color:white;border:none;border-radius:4px;font-size:12px;cursor:pointer;">登録コマンドをコピー</button>',
       '      </div>',
       '    </div>',
       '',
@@ -481,6 +492,19 @@
       });
     });
 
+    // レジストリ登録コマンドコピーボタン
+    var copyBtn = document.getElementById('orca-copy-reg-cmd');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', function () {
+        var cmd = 'New-Item -Path "HKCU:\\Software\\Google\\Chrome\\NativeMessagingHosts\\com.orca.helper" -Force | Out-Null; Set-ItemProperty -Path "HKCU:\\Software\\Google\\Chrome\\NativeMessagingHosts\\com.orca.helper" -Name "(Default)" -Value "C:\\MyApp\\orcaForm\\native_host\\com.orca.helper.json"';
+        navigator.clipboard.writeText(cmd).then(function() {
+          alert('コマンドをコピーしました。\nWinキーを押して「powershell」と入力し、開いた画面に右クリックで貼り付けて実行してください。');
+        }).catch(function(err) {
+          alert('コピーに失敗しました: ' + err);
+        });
+      });
+    }
+
     // アコーディオン開閉
     document.getElementById('orca-accordion-dev').addEventListener('click', function () {
       var body = document.getElementById('orca-accordion-body');
@@ -541,8 +565,8 @@
         var iClass = result[STORAGE_KEYS.injectClass] || INJECT_DEFAULTS.injectClass;
         var iCode1 = result[STORAGE_KEYS.injectCode1] || INJECT_DEFAULTS.injectCode1;
         var iCode2 = (result[STORAGE_KEYS.injectCode2] !== undefined) ? result[STORAGE_KEYS.injectCode2] : INJECT_DEFAULTS.injectCode2;
-        var orcaUser = result[STORAGE_KEYS.orcaUser] || 'secom';
-        var orcaPass = result[STORAGE_KEYS.orcaPass] || 'secom';
+        var orcaUser = result[STORAGE_KEYS.orcaUser] || 'orca';
+        var orcaPass = result[STORAGE_KEYS.orcaPass] || 'recipt';
         document.getElementById('orca-inject-class').value = iClass;
         document.getElementById('orca-inject-code1').value = iCode1;
         document.getElementById('orca-inject-code2').value = iCode2;
@@ -617,6 +641,21 @@
     if (message.action === 'toggleSidebar') {
       toggleSidebar();
     }
+  });
+
+  // page_script.js からの別Chrome起動リクエスト → background.js へ転送
+  document.addEventListener('orca-helper-open-chrome', function (e) {
+    var url = e.detail && e.detail.url;
+    if (!url) return;
+    chrome.runtime.sendMessage(
+      { action: 'openChromeWindow', url: url },
+      function (response) {
+        if (chrome.runtime.lastError || !response || !response.success) {
+          // Native Host 未接続時はエラー表示（タブで開く挙動は削除）
+          alert('別ウィンドウでのChrome起動に失敗しました。\nNative Messaging Host が正しくインストールされているか確認し、拡張機能を再読み込みしてください。');
+        }
+      }
+    );
   });
 
   // ページ読み込み時に設定を適用

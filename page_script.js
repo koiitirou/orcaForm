@@ -195,8 +195,8 @@
       if (!patientId) return null;
 
       // サイドバーで設定されたユーザー/パスワードを取得
-      var orcaUser = document.documentElement.getAttribute('data-orca-user') || 'secom';
-      var orcaPass = document.documentElement.getAttribute('data-orca-pass') || 'secom';
+      var orcaUser = document.documentElement.getAttribute('data-orca-user') || 'orca';
+      var orcaPass = document.documentElement.getAttribute('data-orca-pass') || 'recipt';
 
       if (typeof vm.IsCloudFlg === 'function' && vm.IsCloudFlg()) {
         return 'https://weborca.cloud.orcamo.jp/client.html?scale_mode=percent&user=' + encodeURIComponent(orcaUser) + '&pass=' + encodeURIComponent(orcaPass) + '&screen=' + screen + '&ptnum=' + patientId;
@@ -213,8 +213,7 @@
     // ボタン定義
     var btnDefs = [
       { text: '患者を開く',      screen: 'K02', cls: 'btn btn-success' },
-      { text: '中途データを開く',  screen: 'K10', cls: 'btn btn-success' },
-      { text: '一括送信して中途データ', screen: 'K10', cls: 'btn btn-success', action: 'batchThenChuto' }
+      { text: '中途データを開く',  screen: 'K10', cls: 'btn btn-success' }
     ];
 
     // ブロック作成
@@ -227,29 +226,20 @@
       btn.type = 'button';
       btn.className = def.cls;
       btn.textContent = def.text;
-      if (def.white) btn.style.color = '#fff';
 
-      if (def.action === 'batchThenChuto') {
-        btn.addEventListener('click', function () {
-          // まず一括送信ボタンをクリック
-          allSubmitBtn.click();
-          // 少し待ってから中途データ画面を開く
-          setTimeout(function () {
-            var url = buildOrcaUrl(def.screen, def.padded);
-            if (url) window.open(url, '_blank');
-          }, 1500);
-        });
-      } else {
-        btn.addEventListener('click', function () {
-          var url = buildOrcaUrl(def.screen, def.padded);
-          if (url) window.open(url, '_blank');
-        });
-      }
+      btn.addEventListener('click', function () {
+        var url = buildOrcaUrl(def.screen, def.padded);
+        if (url) {
+          // Native Messaging で別Chrome ウィンドウを開く
+          document.dispatchEvent(new CustomEvent('orca-helper-open-chrome', {
+            detail: { url: url }
+          }));
+        }
+      });
       block.appendChild(btn);
     });
 
-    // 一括送信ボタンの親要素(ブロック)のさらに親に挿入して横並びを防止
-    // ※ 既存の親(parentEl)が flex 等で横並びになっている場合は、その「後」に独立した段として追加
+    // 一括送信ボタンの親要素の後に独立した段として追加
     var parentEl = allSubmitBtn.parentElement;
     parentEl.parentNode.insertBefore(block, parentEl.nextSibling);
     console.log('[ORCA Helper] ORCAボタンブロックを追加しました');

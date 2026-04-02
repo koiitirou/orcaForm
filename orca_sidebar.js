@@ -93,8 +93,8 @@
     // ORCA画面リンク共通処理
     function openOrcaScreen(screen) {
       var params = new URLSearchParams(window.location.search);
-      var user = params.get('user') || 'secom';
-      var pass = params.get('pass') || 'secom';
+      var user = params.get('user') || 'orca';
+      var pass = params.get('pass') || 'recipt';
       var base = window.location.origin;
       window.open(base + '/client.html?scale_mode=percent&user=' + encodeURIComponent(user) + '&pass=' + encodeURIComponent(pass) + '&screen=' + screen, '_blank');
     }

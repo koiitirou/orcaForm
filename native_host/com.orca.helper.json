@@ -1,0 +1,9 @@
+{
+  "name": "com.orca.helper",
+  "description": "ORCA Helper - Opens WebORCA in a dedicated Chrome profile",
+  "path": "native_host.bat",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://loodelplkdlepfcpebocphgclobijlhk/"
+  ]
+}

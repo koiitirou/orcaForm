@@ -24,7 +24,9 @@
     injectCode1: 'injectCode1',
     injectCode2: 'injectCode2',
     orcaUser: 'orcaUser',
-    orcaPass: 'orcaPass'
+    orcaPass: 'orcaPass',
+    nativeZipUrl: 'nativeZipUrl',
+    nativeUnzipPath: 'nativeUnzipPath'
   };
 
   var INJECT_DEFAULTS = {
@@ -261,9 +263,15 @@
       '        <div class="setting-label" style="margin-bottom:6px;">WebORCAショートカット・別ウィンドウ起動セットアップ</div>',
       '        <div class="setting-desc" style="margin-bottom:4px;">1. WebORCA単体起動用ショートカット（コピーして利用）</div>',
       '        <textarea readonly style="width:100%;height:35px;padding:4px;background:#0f172a;color:#10b981;border:1px solid #475569;border-radius:4px;font-size:10px;font-family:monospace;resize:none;margin-bottom:8px;">"C:\\Program Files\\Google\\Chrome\\Application\\chrome_proxy.exe" --user-data-dir="C:\\weborca-chrome" https://weborca.cloud.orcamo.jp/?scale_mode=percent</textarea>',
-      '        <div class="setting-desc" style="margin-bottom:4px;">2. Native Host登録コマンド（PowerShellで実行）</div>',
-      '        <textarea readonly style="width:100%;height:50px;padding:4px;background:#0f172a;color:#10b981;border:1px solid #475569;border-radius:4px;font-size:10px;font-family:monospace;resize:none;margin-bottom:6px;">New-Item -Path "HKCU:\\Software\\Google\\Chrome\\NativeMessagingHosts\\com.orca.helper" -Force | Out-Null; Set-ItemProperty -Path "HKCU:\\Software\\Google\\Chrome\\NativeMessagingHosts\\com.orca.helper" -Name "(Default)" -Value "C:\\MyApp\\orcaForm\\native_host\\com.orca.helper.json"</textarea>',
-      '        <button id="orca-copy-reg-cmd" type="button" style="width:100%;padding:4px;background:#3b82f6;color:white;border:none;border-radius:4px;font-size:12px;cursor:pointer;">登録コマンドをコピー</button>',
+      '        <div class="setting-desc" style="margin-bottom:4px;">2-1. 以下のボタンからセットアップ用ZIPをダウンロードし、任意のフォルダに解凍してください。</div>',
+      '        <div style="margin-bottom:8px;display:flex;gap:4px;">',
+      '          <input type="text" id="orca-native-zip-url" placeholder="ZIPファイルのDL URL (GCS等)" style="flex:1;padding:4px;background:#1e293b;color:#e2e8f0;border:1px solid #475569;border-radius:4px;font-size:11px;">',
+      '          <button id="orca-download-zip-btn" type="button" style="padding:4px 8px;background:#10b981;color:white;border:none;border-radius:4px;font-size:11px;cursor:pointer;">DL🔗</button>',
+      '        </div>',
+      '        <div class="setting-desc" style="margin-bottom:4px;">2-2. 解凍先フォルダパスを入力して、インストールコマンドをコピー＆実行してください。</div>',
+      '        <input type="text" id="orca-native-unzip-path" placeholder="例: C:\\ORCA_Helper_Native" style="width:100%;padding:4px;background:#1e293b;color:#e2e8f0;border:1px solid #475569;border-radius:4px;font-size:11px;margin-bottom:4px;box-sizing:border-box;">',
+      '        <textarea id="orca-native-install-cmd" readonly style="width:100%;height:35px;padding:4px;background:#0f172a;color:#10b981;border:1px solid #475569;border-radius:4px;font-size:10px;font-family:monospace;resize:none;margin-bottom:6px;box-sizing:border-box;"></textarea>',
+      '        <button id="orca-copy-reg-cmd" type="button" style="width:100%;padding:4px;background:#3b82f6;color:white;border:none;border-radius:4px;font-size:12px;cursor:pointer;">インストーラー起動コマンドをコピー</button>',
       '      </div>',
       '    </div>',
       '',
@@ -492,11 +500,50 @@
       });
     });
 
+    // Native Host ZIP DL & Install URL events
+    var zipUrlEl = document.getElementById('orca-native-zip-url');
+    var dlBtnEl = document.getElementById('orca-download-zip-btn');
+    var unzipPathEl = document.getElementById('orca-native-unzip-path');
+    var cmdTextareaEl = document.getElementById('orca-native-install-cmd');
+
+    function updateInstallCmd() {
+      if (!cmdTextareaEl || !unzipPathEl) return;
+      var p = unzipPathEl.value.trim() || 'C:\\ORCA_Helper_Native';
+      var scriptPath = p.replace(/\\$/, '') + '\\install_host.ps1';
+      cmdTextareaEl.value = 'PowerShell -ExecutionPolicy Bypass -File "' + scriptPath + '"';
+    }
+
+    if (zipUrlEl) {
+      zipUrlEl.addEventListener('input', function() {
+        var obj = {}; obj[STORAGE_KEYS.nativeZipUrl] = zipUrlEl.value;
+        chrome.storage.local.set(obj);
+      });
+    }
+
+    if (dlBtnEl) {
+      dlBtnEl.addEventListener('click', function() {
+        if (zipUrlEl && zipUrlEl.value) {
+          window.open(zipUrlEl.value, '_blank');
+        } else {
+          alert('ZIPファイルのURLが入力されていません。');
+        }
+      });
+    }
+
+    if (unzipPathEl) {
+      unzipPathEl.addEventListener('input', function() {
+        var obj = {}; obj[STORAGE_KEYS.nativeUnzipPath] = unzipPathEl.value;
+        chrome.storage.local.set(obj);
+        updateInstallCmd();
+      });
+    }
+
     // レジストリ登録コマンドコピーボタン
     var copyBtn = document.getElementById('orca-copy-reg-cmd');
     if (copyBtn) {
       copyBtn.addEventListener('click', function () {
-        var cmd = 'New-Item -Path "HKCU:\\Software\\Google\\Chrome\\NativeMessagingHosts\\com.orca.helper" -Force | Out-Null; Set-ItemProperty -Path "HKCU:\\Software\\Google\\Chrome\\NativeMessagingHosts\\com.orca.helper" -Name "(Default)" -Value "C:\\MyApp\\orcaForm\\native_host\\com.orca.helper.json"';
+        var cmd = cmdTextareaEl ? cmdTextareaEl.value : '';
+        if (!cmd) return;
         navigator.clipboard.writeText(cmd).then(function() {
           alert('コマンドをコピーしました。\nWinキーを押して「powershell」と入力し、開いた画面に右クリックで貼り付けて実行してください。');
         }).catch(function(err) {
@@ -522,7 +569,8 @@
     chrome.storage.local.get(
       [STORAGE_KEYS.themeDark, STORAGE_KEYS.autoDate, STORAGE_KEYS.statusBlank, STORAGE_KEYS.autoSearch,
        STORAGE_KEYS.accountCheck, STORAGE_KEYS.sidebarOpen, STORAGE_KEYS.savedStartDate, STORAGE_KEYS.savedEndDate,
-       STORAGE_KEYS.injectCode, STORAGE_KEYS.debugMode, STORAGE_KEYS.orcaUser, STORAGE_KEYS.orcaPass],
+       STORAGE_KEYS.injectCode, STORAGE_KEYS.debugMode, STORAGE_KEYS.orcaUser, STORAGE_KEYS.orcaPass,
+       STORAGE_KEYS.nativeZipUrl, STORAGE_KEYS.nativeUnzipPath],
       function (result) {
         var themeDark = result[STORAGE_KEYS.themeDark] || false;
         var autoDate = result[STORAGE_KEYS.autoDate] || false;
@@ -572,6 +620,18 @@
         document.getElementById('orca-inject-code2').value = iCode2;
         document.getElementById('orca-user').value = orcaUser;
         document.getElementById('orca-pass').value = orcaPass;
+
+        var zipUrl = result[STORAGE_KEYS.nativeZipUrl] || '';
+        var unzipPath = result[STORAGE_KEYS.nativeUnzipPath] || 'C:\\ORCA_Helper_Native';
+        var zipUrlEl = document.getElementById('orca-native-zip-url');
+        var unzipPathEl = document.getElementById('orca-native-unzip-path');
+        var cmdTextareaEl = document.getElementById('orca-native-install-cmd');
+        if (zipUrlEl) zipUrlEl.value = zipUrl;
+        if (unzipPathEl) unzipPathEl.value = unzipPath;
+        if (cmdTextareaEl) {
+          var p = unzipPath.trim() || 'C:\\ORCA_Helper_Native';
+          cmdTextareaEl.value = 'PowerShell -ExecutionPolicy Bypass -File "' + p.replace(/\\$/, '') + '\\install_host.ps1"';
+        }
 
         updateCardStyle('card-autoDate', autoDate);
         updateCardStyle('card-statusBlank', statusBlank);

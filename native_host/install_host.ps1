@@ -1,4 +1,4 @@
-# ORCA Helper - Native Messaging Host インストーラー
+﻿# ORCA Helper - Native Messaging Host インストーラー
 # 拡張機能IDを自動検出し、マニフェストを生成してレジストリに登録する
 #
 # 使い方:

@@ -89,32 +89,6 @@
 
     window.OrcaRuleEngine.startObserver();
     setInterval(ensureInjection, 1000);
-
-    // ========================================
-    // クリップボードからの自動入力連携（orderconvert → WebORCA）
-    // ========================================
-    chrome.storage.onChanged.addListener(function (changes, namespace) {
-      if (namespace === 'local' && changes['orca-helper-copied-id']) {
-        var newId = changes['orca-helper-copied-id'].newValue;
-        if (newId) {
-          // K02画面などの患者ID入力欄を探す
-          var ptnumInput = document.getElementById('K02.fixed2.PTNUM') || document.querySelector('input[id$=".PTNUM"]');
-          if (ptnumInput) {
-             ptnumInput.focus();
-             ptnumInput.value = newId;
-
-             // React/Angular等のフレームワークにも値変更を認識させるためのイベント
-             ptnumInput.dispatchEvent(new Event('input', { bubbles: true }));
-             ptnumInput.dispatchEvent(new Event('change', { bubbles: true }));
-
-             // Enterキーのイベントを発火して検索を実行する
-             ptnumInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', keyCode: 13, code: 'Enter', which: 13, bubbles: true }));
-             ptnumInput.dispatchEvent(new KeyboardEvent('keypress', { key: 'Enter', keyCode: 13, code: 'Enter', which: 13, bubbles: true }));
-             ptnumInput.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', keyCode: 13, code: 'Enter', which: 13, bubbles: true }));
-          }
-        }
-      }
-    });
   }
 
   if (document.readyState === 'loading') {

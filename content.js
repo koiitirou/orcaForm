@@ -695,12 +695,6 @@
           copyBtn.textContent = oldContent; 
           copyBtn.style.background = '#fff';
         }, 1500);
-        
-        // 別ドメイン連携用にstorageにも保存（トリガーとして常に最新のタイムスタンプ等を付与する手もあるが、値の更新で検知させる）
-        // 同じIDをクリックし直した時もイベント発火させるために、一瞬消してからセットする裏技
-        chrome.storage.local.remove('orca-helper-copied-id', function() {
-           chrome.storage.local.set({'orca-helper-copied-id': idVal});
-        });
       }
 
       // HTTP環境（IPアドレスなど）では navigator.clipboard が Undefined になるためフォールバックを用意

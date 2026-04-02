@@ -17,7 +17,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 # --- Config ---
-$GCLOUD = "C:\Users\236PC\AppData\Local\Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd"
+$GCLOUD = Join-Path $env:LOCALAPPDATA "Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd"
 $EXTENSION_DIR = $PSScriptRoot
 $PEM_FILE = Join-Path $EXTENSION_DIR "orca-helper.pem"
 $CRX_FILE = Join-Path $EXTENSION_DIR "orca-helper.crx"

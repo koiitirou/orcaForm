@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "ORCA Helper",
-  "version": "2.5.4",
+  "version": "2.6.1",
   "description": "WebORCAの入力を支援する機能",
   "update_url": "https://storage.googleapis.com/orca-helper-extension/update.xml",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyBFVMr9PPty3mFTQZ4Sy8P7qOu55s+wEYihmxsyVNNfzWTHh/quzMRgr+yFTvcym/3sxRUIhReuK9aRCmnWxgrxpNDK1O0kuT2IZDVY2K3mlg06rA6Vy20Pe5Xep93wF19sgS7Z+ngGN+iaVycZSVNaVtZAiTTycKhacLxNQQdQkhkXkN3EgB+XC0M3gJOGJfYG6b0gEZKUCfVvn98CnVWto1KJE3jXN8YvuIn3mSzUozJHmCSyTVQ2Pru6OaDsOWzk9Wx6lu1LVh3KKehIhDjMRdICeHcq+pMh/CT1UAz9hbek+cGlcydQAgqr9iq1MPWCRR9u9q+PohD2zpfIFCQIDAQAB",

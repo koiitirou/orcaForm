@@ -195,8 +195,8 @@
       if (!patientId) return null;
 
       // サイドバーで設定されたユーザー/パスワードを取得
-      var orcaUser = document.documentElement.getAttribute('data-orca-user') || 'orca';
-      var orcaPass = document.documentElement.getAttribute('data-orca-pass') || 'recipt';
+      var orcaUser = document.documentElement.getAttribute('data-orca-user') || 'secom';
+      var orcaPass = document.documentElement.getAttribute('data-orca-pass') || 'secom';
 
       if (typeof vm.IsCloudFlg === 'function' && vm.IsCloudFlg()) {
         return 'https://weborca.cloud.orcamo.jp/client.html?scale_mode=percent&user=' + encodeURIComponent(orcaUser) + '&pass=' + encodeURIComponent(orcaPass) + '&screen=' + screen + '&ptnum=' + patientId;

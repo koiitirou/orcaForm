@@ -247,11 +247,11 @@
       '        <div class="setting-desc" style="margin-bottom:8px;">WebORCA画面を開く時のユーザー/パスワード</div>',
       '        <div style="margin-bottom:6px;">',
       '          <label style="font-size:11px;color:#94a3b8;display:block;margin-bottom:2px;">ユーザー名</label>',
-      '          <input type="text" id="orca-user" value="orca" style="width:100%;padding:4px 8px;background:#1e293b;color:#e2e8f0;border:1px solid #475569;border-radius:4px;font-size:13px;box-sizing:border-box;">',
+      '          <input type="text" id="orca-user" value="secom" style="width:100%;padding:4px 8px;background:#1e293b;color:#e2e8f0;border:1px solid #475569;border-radius:4px;font-size:13px;box-sizing:border-box;">',
       '        </div>',
       '        <div>',
       '          <label style="font-size:11px;color:#94a3b8;display:block;margin-bottom:2px;">パスワード</label>',
-      '          <input type="text" id="orca-pass" value="recipt" style="width:100%;padding:4px 8px;background:#1e293b;color:#e2e8f0;border:1px solid #475569;border-radius:4px;font-size:13px;box-sizing:border-box;">',
+      '          <input type="text" id="orca-pass" value="secom" style="width:100%;padding:4px 8px;background:#1e293b;color:#e2e8f0;border:1px solid #475569;border-radius:4px;font-size:13px;box-sizing:border-box;">',
       '        </div>',
       '      </div>',
       '    </div>',
@@ -565,8 +565,8 @@
         var iClass = result[STORAGE_KEYS.injectClass] || INJECT_DEFAULTS.injectClass;
         var iCode1 = result[STORAGE_KEYS.injectCode1] || INJECT_DEFAULTS.injectCode1;
         var iCode2 = (result[STORAGE_KEYS.injectCode2] !== undefined) ? result[STORAGE_KEYS.injectCode2] : INJECT_DEFAULTS.injectCode2;
-        var orcaUser = result[STORAGE_KEYS.orcaUser] || 'orca';
-        var orcaPass = result[STORAGE_KEYS.orcaPass] || 'recipt';
+        var orcaUser = result[STORAGE_KEYS.orcaUser] || 'secom';
+        var orcaPass = result[STORAGE_KEYS.orcaPass] || 'secom';
         document.getElementById('orca-inject-class').value = iClass;
         document.getElementById('orca-inject-code1').value = iCode1;
         document.getElementById('orca-inject-code2').value = iCode2;

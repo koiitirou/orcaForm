@@ -658,6 +658,86 @@
     );
   });
 
+  // 患者IDコピーボタンの注入
+  function injectCopyIdButton() {
+    var ptidInput = document.querySelector('input[data-bind="value: ptid"]');
+    if (!ptidInput || document.getElementById('orca-copy-id-btn')) return;
+
+    var copyBtn = document.createElement('button');
+    copyBtn.id = 'orca-copy-id-btn';
+    copyBtn.type = 'button';
+    // Bootstrapのボタンスタイルを利用しつつ少し調整
+    copyBtn.className = 'btn btn-outline-secondary';
+    copyBtn.style.cssText = 'margin-left: 5px; padding: 2px 8px; font-size: 12px; height: 26px; line-height: 1; border-color: #cbd5e1; background: #fff; cursor: pointer;';
+    copyBtn.textContent = '📋';
+    copyBtn.title = '患者IDをコピー (クリップボード＆WebORCA自動入力用)';
+
+    ptidInput.parentNode.insertBefore(copyBtn, ptidInput.nextSibling);
+
+    // レイアウト崩れ対策: 追加したボタンの幅の分、weborcaOpenの巨大な左マージンを動的に吸収して改行を防ぐ
+    var weborcaOpen = document.getElementById('weborcaOpen');
+    if (weborcaOpen) {
+      weborcaOpen.style.marginLeft = 'auto'; // フレックスアライメントに任せる
+    }
+
+    copyBtn.addEventListener('click', function() {
+      var idVal = ptidInput.value;
+      if (!idVal) {
+        alert('患者IDが入力されていません。');
+        return;
+      }
+
+      function onCopySuccess() {
+        var oldContent = copyBtn.textContent;
+        copyBtn.textContent = '✅';
+        copyBtn.style.background = '#dcfce7';
+        setTimeout(function() { 
+          copyBtn.textContent = oldContent; 
+          copyBtn.style.background = '#fff';
+        }, 1500);
+        
+        // 別ドメイン連携用にstorageにも保存（トリガーとして常に最新のタイムスタンプ等を付与する手もあるが、値の更新で検知させる）
+        // 同じIDをクリックし直した時もイベント発火させるために、一瞬消してからセットする裏技
+        chrome.storage.local.remove('orca-helper-copied-id', function() {
+           chrome.storage.local.set({'orca-helper-copied-id': idVal});
+        });
+      }
+
+      // HTTP環境（IPアドレスなど）では navigator.clipboard が Undefined になるためフォールバックを用意
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(idVal).then(onCopySuccess).catch(function(err) {
+          fallbackCopyTextToClipboard(idVal, onCopySuccess);
+        });
+      } else {
+        fallbackCopyTextToClipboard(idVal, onCopySuccess);
+      }
+    });
+  }
+
+  function fallbackCopyTextToClipboard(text, onSuccess) {
+    var textArea = document.createElement("textarea");
+    textArea.value = text;
+    // 画面外に配置
+    textArea.style.top = "0";
+    textArea.style.left = "0";
+    textArea.style.position = "fixed";
+    textArea.style.opacity = "0";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+      var successful = document.execCommand('copy');
+      if (successful) onSuccess();
+      else alert('コピーに失敗しました（ブラウザ設定による制限）');
+    } catch (err) {
+      alert('コピーに失敗しました: ' + err);
+    }
+    document.body.removeChild(textArea);
+  }
+
+  // KnockoutJSによるレンダリング後に追加するため定期チェック
+  setInterval(injectCopyIdButton, 1000);
+
   // ページ読み込み時に設定を適用
   setTimeout(function () {
     loadAndApplySettings();

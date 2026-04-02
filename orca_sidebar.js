@@ -77,6 +77,20 @@
       '        <span class="toggle-slider"></span>',
       '      </label>',
       '    </div>',
+      '    </div>',
+      '  </div>',
+      '  <div class="setting-card">',
+      '    <div style="padding:8px 12px;">',
+      '      <div class="setting-label" style="margin-bottom:6px;">WebORCA接続ユーザー</div>',
+      '      <div style="margin-bottom:6px;">',
+      '        <label style="font-size:11px;color:var(--orca-text-sub,#94a3b8);display:block;margin-bottom:2px;">ユーザー名</label>',
+      '        <input type="text" id="orca-sidebar-user" style="width:100%;padding:4px 8px;background:var(--orca-bg,#ffffff);color:var(--orca-text,#334155);border:1px solid var(--orca-border,#cbd5e1);border-radius:4px;font-size:13px;box-sizing:border-box;">',
+      '      </div>',
+      '      <div>',
+      '        <label style="font-size:11px;color:var(--orca-text-sub,#94a3b8);display:block;margin-bottom:2px;">パスワード</label>',
+      '        <input type="text" id="orca-sidebar-pass" style="width:100%;padding:4px 8px;background:var(--orca-bg,#ffffff);color:var(--orca-text,#334155);border:1px solid var(--orca-border,#cbd5e1);border-radius:4px;font-size:13px;box-sizing:border-box;">',
+      '      </div>',
+      '    </div>',
       '  </div>',
       buildRuleCardsHTML(),
       '  <div style="margin-top:auto;padding:12px 16px;border-top:1px solid var(--orca-border,#e2e8f0);display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">',
@@ -90,11 +104,33 @@
     floatBtn.addEventListener('click', openSidebar);
     document.getElementById('orca-sidebar-close').addEventListener('click', closeSidebar);
 
+    var userEl = document.getElementById('orca-sidebar-user');
+    var passEl = document.getElementById('orca-sidebar-pass');
+
+    // orderconvert側と共通のストレージを読み込む
+    chrome.storage.local.get(['orca-helper-orca-user', 'orca-helper-orca-pass'], function(result) {
+      if (userEl && passEl) {
+        userEl.value = result['orca-helper-orca-user'] || 'orca';
+        passEl.value = result['orca-helper-orca-pass'] || 'receipt';
+      }
+    });
+
+    function saveCredentials() {
+      if (userEl && passEl) {
+        chrome.storage.local.set({
+          'orca-helper-orca-user': userEl.value,
+          'orca-helper-orca-pass': passEl.value
+        });
+      }
+    }
+
+    if (userEl) userEl.addEventListener('input', saveCredentials);
+    if (passEl) passEl.addEventListener('input', saveCredentials);
+
     // ORCA画面リンク共通処理
     function openOrcaScreen(screen) {
-      var params = new URLSearchParams(window.location.search);
-      var user = params.get('user') || 'secom';
-      var pass = params.get('pass') || 'secom';
+      var user = userEl ? userEl.value : 'orca';
+      var pass = passEl ? passEl.value : 'receipt';
       var base = window.location.origin;
       window.open(base + '/client.html?scale_mode=percent&user=' + encodeURIComponent(user) + '&pass=' + encodeURIComponent(pass) + '&screen=' + screen, '_blank');
     }

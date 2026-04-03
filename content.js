@@ -544,11 +544,16 @@
       copyBtn.addEventListener('click', function () {
         var cmd = cmdTextareaEl ? cmdTextareaEl.value : '';
         if (!cmd) return;
-        navigator.clipboard.writeText(cmd).then(function() {
-          alert('コマンドをコピーしました。\nWinキーを押して「powershell」と入力し、開いた画面に右クリックで貼り付けて実行してください。');
-        }).catch(function(err) {
-          alert('コピーに失敗しました: ' + err);
-        });
+        var msg = 'コマンドをコピーしました。\nWinキーを押して「powershell」と入力し、開いた画面に右クリックで貼り付けて実行してください。';
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(cmd).then(function() {
+            alert(msg);
+          }).catch(function(err) {
+            fallbackCopyTextToClipboard(cmd, function() { alert(msg); });
+          });
+        } else {
+          fallbackCopyTextToClipboard(cmd, function() { alert(msg); });
+        }
       });
     }
 

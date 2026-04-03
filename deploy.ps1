@@ -22,6 +22,8 @@ $EXTENSION_DIR = $PSScriptRoot
 $PEM_FILE = Join-Path $EXTENSION_DIR "orca-helper.pem"
 $CRX_FILE = Join-Path $EXTENSION_DIR "orca-helper.crx"
 $UPDATE_XML = Join-Path $EXTENSION_DIR "update.xml"
+$NATIVE_HOST_DIR = Join-Path $EXTENSION_DIR "native_host"
+$NATIVE_ZIP_FILE = Join-Path $EXTENSION_DIR "native_host.zip"
 $GCS_BUCKET = "gs://orca-helper-extension"
 $EXTENSION_ID = "loodelplkdlepfcpebocphgclobijlhk"
 
@@ -83,6 +85,13 @@ if (-not $SkipBuild) {
     }
 
     Remove-Item $tempDir -Recurse -Force -ErrorAction SilentlyContinue
+
+    # --- Zip Native Host ---
+    Write-Host ""
+    Write-Host "[1.5/3] Zipping Native Host ..." -ForegroundColor Green
+    if (Test-Path $NATIVE_ZIP_FILE) { Remove-Item $NATIVE_ZIP_FILE -Force }
+    Compress-Archive -Path "$NATIVE_HOST_DIR\*" -DestinationPath $NATIVE_ZIP_FILE
+    Write-Host "  Created: $NATIVE_ZIP_FILE" -ForegroundColor Green
 }
 
 # --- CRX check ---
@@ -111,6 +120,10 @@ Write-Host "  Uploading orca-helper.crx ..."
 & cmd /c """$GCLOUD"" storage cp ""$CRX_FILE"" $GCS_BUCKET/orca-helper.crx --content-type=application/x-chrome-extension"
 if ($LASTEXITCODE -ne 0) { Write-Error "Failed to upload .crx"; exit 1 }
 
+Write-Host "  Uploading native_host.zip ..."
+& cmd /c """$GCLOUD"" storage cp ""$NATIVE_ZIP_FILE"" $GCS_BUCKET/native_host.zip --content-type=application/zip"
+if ($LASTEXITCODE -ne 0) { Write-Error "Failed to upload native_host.zip"; exit 1 }
+
 Write-Host "  Uploading update.xml ..."
 & cmd /c """$GCLOUD"" storage cp ""$UPDATE_XML"" $GCS_BUCKET/update.xml --content-type=application/xml"
 if ($LASTEXITCODE -ne 0) { Write-Error "Failed to upload update.xml"; exit 1 }
@@ -121,4 +134,5 @@ Write-Host "Version $version -> $GCS_BUCKET" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "  update.xml: https://storage.googleapis.com/orca-helper-extension/update.xml"
 Write-Host "  .crx:       https://storage.googleapis.com/orca-helper-extension/orca-helper.crx"
+Write-Host "  native_host: https://storage.googleapis.com/orca-helper-extension/native_host.zip"
 Write-Host "  ExtensionID: $EXTENSION_ID"

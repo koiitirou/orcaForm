@@ -265,11 +265,11 @@
       '        <textarea readonly style="width:100%;height:35px;padding:4px;background:#0f172a;color:#10b981;border:1px solid #475569;border-radius:4px;font-size:10px;font-family:monospace;resize:none;margin-bottom:8px;">"C:\\Program Files\\Google\\Chrome\\Application\\chrome_proxy.exe" --user-data-dir="C:\\weborca-chrome" https://weborca.cloud.orcamo.jp/?scale_mode=percent</textarea>',
       '        <div class="setting-desc" style="margin-bottom:4px;">2-1. 以下のボタンからセットアップ用ZIPをダウンロードし、任意のフォルダに解凍してください。</div>',
       '        <div style="margin-bottom:8px;display:flex;gap:4px;">',
-      '          <input type="text" id="orca-native-zip-url" placeholder="ZIPファイルのDL URL (GCS等)" style="flex:1;padding:4px;background:#1e293b;color:#e2e8f0;border:1px solid #475569;border-radius:4px;font-size:11px;">',
+      '          <input type="text" id="orca-native-zip-url" placeholder="ZIPファイルのDL URL (GCS等)" value="https://storage.googleapis.com/orca-helper-extension/native_host.zip" style="flex:1;padding:4px;background:#1e293b;color:#e2e8f0;border:1px solid #475569;border-radius:4px;font-size:11px;">',
       '          <button id="orca-download-zip-btn" type="button" style="padding:4px 8px;background:#10b981;color:white;border:none;border-radius:4px;font-size:11px;cursor:pointer;">DL🔗</button>',
       '        </div>',
       '        <div class="setting-desc" style="margin-bottom:4px;">2-2. 解凍先フォルダパスを入力して、インストールコマンドをコピー＆実行してください。</div>',
-      '        <input type="text" id="orca-native-unzip-path" placeholder="例: C:\\ORCA_Helper_Native" style="width:100%;padding:4px;background:#1e293b;color:#e2e8f0;border:1px solid #475569;border-radius:4px;font-size:11px;margin-bottom:4px;box-sizing:border-box;">',
+      '        <input type="text" id="orca-native-unzip-path" placeholder="例: C:\\MyApp\\test" style="width:100%;padding:4px;background:#1e293b;color:#e2e8f0;border:1px solid #475569;border-radius:4px;font-size:11px;margin-bottom:4px;box-sizing:border-box;">',
       '        <textarea id="orca-native-install-cmd" readonly style="width:100%;height:35px;padding:4px;background:#0f172a;color:#10b981;border:1px solid #475569;border-radius:4px;font-size:10px;font-family:monospace;resize:none;margin-bottom:6px;box-sizing:border-box;"></textarea>',
       '        <button id="orca-copy-reg-cmd" type="button" style="width:100%;padding:4px;background:#3b82f6;color:white;border:none;border-radius:4px;font-size:12px;cursor:pointer;">インストーラー起動コマンドをコピー</button>',
       '      </div>',
@@ -508,7 +508,7 @@
 
     function updateInstallCmd() {
       if (!cmdTextareaEl || !unzipPathEl) return;
-      var p = unzipPathEl.value.trim() || 'C:\\ORCA_Helper_Native';
+      var p = unzipPathEl.value.trim() || 'C:\\MyApp\\test';
       var scriptPath = p.replace(/\\$/, '') + '\\install_host.ps1';
       cmdTextareaEl.value = 'PowerShell -ExecutionPolicy Bypass -File "' + scriptPath + '"';
     }
@@ -621,15 +621,15 @@
         document.getElementById('orca-user').value = orcaUser;
         document.getElementById('orca-pass').value = orcaPass;
 
-        var zipUrl = result[STORAGE_KEYS.nativeZipUrl] || '';
-        var unzipPath = result[STORAGE_KEYS.nativeUnzipPath] || 'C:\\ORCA_Helper_Native';
+        var zipUrl = result[STORAGE_KEYS.nativeZipUrl] || 'https://storage.googleapis.com/orca-helper-extension/native_host.zip';
+        var unzipPath = result[STORAGE_KEYS.nativeUnzipPath] || 'C:\\MyApp\\test';
         var zipUrlEl = document.getElementById('orca-native-zip-url');
         var unzipPathEl = document.getElementById('orca-native-unzip-path');
         var cmdTextareaEl = document.getElementById('orca-native-install-cmd');
         if (zipUrlEl) zipUrlEl.value = zipUrl;
         if (unzipPathEl) unzipPathEl.value = unzipPath;
         if (cmdTextareaEl) {
-          var p = unzipPath.trim() || 'C:\\ORCA_Helper_Native';
+          var p = unzipPath.trim() || 'C:\\MyApp\\test';
           cmdTextareaEl.value = 'PowerShell -ExecutionPolicy Bypass -File "' + p.replace(/\\$/, '') + '\\install_host.ps1"';
         }
 

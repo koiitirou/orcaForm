@@ -621,7 +621,10 @@
         document.getElementById('orca-user').value = orcaUser;
         document.getElementById('orca-pass').value = orcaPass;
 
-        var zipUrl = result[STORAGE_KEYS.nativeZipUrl] || 'https://storage.googleapis.com/orca-helper-extension/native_host.zip';
+        var zipUrl = result[STORAGE_KEYS.nativeZipUrl];
+        if (!zipUrl || !zipUrl.startsWith('http')) {
+            zipUrl = 'https://storage.googleapis.com/orca-helper-extension/native_host.zip';
+        }
         var unzipPath = result[STORAGE_KEYS.nativeUnzipPath] || 'C:\\MyApp\\test';
         var zipUrlEl = document.getElementById('orca-native-zip-url');
         var unzipPathEl = document.getElementById('orca-native-unzip-path');

@@ -63,15 +63,6 @@
         "orca_content.js"
       ],
       "run_at": "document_idle"
-    },
-    {
-      "matches": [
-        "https://c1.secom-owel.jp/*"
-      ],
-      "js": [
-        "owel_content.js"
-      ],
-      "run_at": "document_idle"
     }
   ]
 }
